@@ -60,6 +60,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <tbody>
                 <?php
                 $plans = [
+                    [50,'7–8 GB','50 USD','One Hour','2.00 mb/s'],
+                    [100,'8–9 GB','100 USD','One Hour','2.80 mb/s'],
+                    [200,'9–10 GB','200 USD','One Hour','3.00 mb/s'],
                     [500,'10–11 GB','500 USD','One Hour','3.06 mb/s'],
                     [600,'11–12 GB','600 USD','One Hour','3.33 mb/s'],
                     [700,'12–13 GB','700 USD','One Hour','3.61 mb/s'],
