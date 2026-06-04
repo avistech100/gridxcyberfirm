@@ -1,0 +1,61 @@
+# GridX Cyber Solutions - Apache Configuration
+# Upload this to your Hostinger public_html root
+
+Options -Indexes
+ServerSignature Off
+
+# ── Security Headers ────────────────────────────────────────
+<IfModule mod_headers.c>
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# ── Protect sensitive files ──────────────────────────────────
+<FilesMatch "(^\.env|config\.php|database\.sql)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# ── Protect includes directory ───────────────────────────────
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Block direct access to includes/
+    RewriteRule ^includes/ - [F,L]
+
+    # Redirect /dashboard to /dashboard.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^dashboard$ /dashboard.php [L,R=301]
+
+    # Redirect /login to /login.php
+    RewriteRule ^login$ /login.php [L,R=301]
+
+    # Redirect /signup to /signup.php
+    RewriteRule ^signup$ /signup.php [L,R=301]
+
+    # Redirect /refund to /refund.php
+    RewriteRule ^refund$ /refund.php [L,R=301]
+
+    # Redirect /payment to /payment.php
+    RewriteRule ^payment$ /payment.php [L,R=301]
+</IfModule>
+
+# ── PHP settings (Hostinger shared hosting) ──────────────────
+<IfModule mod_php.c>
+    php_flag display_errors Off
+    php_value session.cookie_httponly 1
+    php_value session.use_strict_mode 1
+</IfModule>
+
+# ── Caching for static assets ────────────────────────────────
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/png  "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType text/css   "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+</IfModule>

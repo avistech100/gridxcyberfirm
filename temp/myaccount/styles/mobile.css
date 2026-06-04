@@ -1,0 +1,345 @@
+@media only screen and (max-width: 1035px) {
+    .container {
+        /* width: 95%; */
+        margin: 0 auto;
+        padding: 10px 3.5%;
+    }
+
+    .services-list h3 {
+        grid-column: 1 /span 2;
+    }
+
+}
+
+
+@media only screen and (max-width: 600px) {
+    body {
+        width: 100%;
+        height: 100vh;
+    }
+
+    .modal img {
+        top: calc(50% - 110px);
+        left: calc(50%-100px);
+    }
+
+    /* Navigation */
+    nav ul {
+        display: flex;
+        opacity: 0;
+        visibility: hidden;
+        /* Hidden by default, toggle with JS or class */
+        flex-direction: column;
+        justify-content: space-between;
+        height: 50vh;
+        width: 50%;
+        position: absolute;
+        background: var(--black);
+        right: 0;
+        top: 30%;
+        border-radius: 5px;
+        transition: all 1s;
+    }
+
+    nav ul.active {
+        display: flex;
+        /* Show when active */
+    }
+
+    #cancel {
+        display: flex;
+    }
+
+    nav .display {
+        width: 30px;
+        display: flex;
+    }
+
+    /* Container */
+    .container {
+        width: 95%;
+        margin: 0 auto;
+        padding: 10px 3%;
+    }
+
+    /* Header */
+    header {
+        height: auto;
+        background-image: none;
+        padding-top: 15%;
+    }
+
+    header p,
+    header h1,
+    .header-text .desc {
+        color: white;
+        font-size: 1.1rem;
+        font-weight: 500;
+    }
+
+    .services-list h3 {
+        grid-column: 1 /span 1;
+    }
+
+    /* Layout */
+    .layout {
+        display: grid;
+        grid-template-columns: 100%;
+    }
+
+    /* Carousel */
+    .carousel {
+        overflow: hidden;
+    }
+
+    .carousel-container {
+        width: 100%;
+        height: 500px;
+        margin: 40px auto;
+    }
+
+    .carousel-item.active {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .carousel img {
+        border-radius: 0;
+        height: 50%;
+        width: 100%;
+    }
+
+    .carousel-item-description {
+        padding: 3px;
+        /* background: gold; */
+        width: 100%;
+    }
+
+    .carousel-item-description h2 {
+        margin-top: 0;
+        margin-bottom: 0.3rem;
+    }
+
+    /* Contact Section */
+    .contact-left {
+        margin: 0 auto;
+    }
+
+    .contact-right {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+    }
+
+    .faq h2{
+    text-align: center;
+    margin: 40px 0 30px;
+    padding-top: 11vh;
+}
+
+    .faq-container {
+        display: flex;
+        flex-direction: column-reverse;
+    }
+
+    .faq-container img {
+        width: 100%;
+        height: 200px;
+        border-radius: 10px;
+        object-fit: cover;
+        display: none;
+    }
+
+    .faq-container div {
+        width: 100%;
+        margin-bottom: 20px;
+    }
+
+    #checkbox label {
+        font-size: 13px;
+        font-weight: 500;
+        line-height: 1.5;
+    }
+
+    .contact-right form button {
+        width: 60%;
+    }
+
+    /* Footer */
+    footer {
+        width: 100%;
+        padding: 0;
+        margin-top: 60px;
+    }
+
+    .footercont {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+        align-items: center;
+        justify-content: flex-start;
+    }
+
+    .footercont .links {
+        width: 100%;
+    }
+
+    .footercont .third {
+        width: 50%;
+    }
+
+    .footercont h4 {
+        padding: 1rem 2.5rem;
+        /* grid-column: 1 /  1; */
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* @media only screen and (max-width:600px) {
+    nav ul {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 40vh;
+        position: absolute;
+        background: var(--black);
+        right: 0;
+        top: 30%;
+        border-radius: 5px;
+        display: none;
+        transition: all .5s;
+    }
+
+    #cancel {
+        display: flex;
+    }
+
+    nav .display {
+        width: 30px;
+        display: flex;
+    }
+    .container {
+        width: 95;
+        margin: 0 auto;
+    }
+
+    header {
+        height: auto;
+        background-image: none;
+        padding-top: 15%;
+    }
+
+    .layout {
+        grid-template-columns: 100%;
+    }
+
+    header p,
+    header h1,
+    .header-text .desc {
+        color: white;
+        font-size: 1.1rem;
+        /* line-height: 30px; *
+        font-weight: 500;
+    }
+
+    .container {
+        padding: 10px 3%;
+    }
+
+    .carousel {
+        overflow: hidden;
+    }
+
+    .carousel-container {
+        width: 100%;
+        height: 500px;
+        margin: 40px auto;
+    }
+
+    .carousel-item.active {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .carousel img {
+        border-radius: 0;
+        height: 50%;
+        width: 100%;
+    }
+
+    .carousel-item-description {
+        padding: 3px;
+        background: gold;
+        width: 10s0%;
+    }
+
+    .carousel-item-description h2 {
+        margin-top: 0;
+        margin-bottom: .3rem;
+    }
+
+    .contact-left {
+        margin: 0 auto;
+    }
+
+    .contact-right {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+    }
+
+    #checkbox label {
+        font-size: 13px;
+        font-weight: 500;
+        line-break: 5px;
+    }
+
+    .contact-right form button {
+        width: 60%;
+    }
+
+    footer {
+        width: 100%;
+        padding: 0;
+        margin-top: 60;
+    }
+
+    .footercont {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+        align-items: center;
+        justify-content: baseline;
+    }
+
+    .footercont .link {
+        width: 100%;
+    }
+
+    .footercont .third {
+        width: 50%;
+    }
+
+    .footercont h4 {
+        padding: 1rem 2.5rem;
+    }
+} */
