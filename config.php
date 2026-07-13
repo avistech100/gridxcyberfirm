@@ -67,27 +67,36 @@ function current_user(): ?array {
         $db = get_db();
         $st = $db->prepare('SELECT * FROM user_gridxuser WHERE id = ?');
         $st->execute([$_SESSION['user_id']]);
-        return $st->fetch() ?: null;
+        $user = $st->fetch();
+        if ($user) {
+            return $user;
+        } else {
+            unset($_SESSION['user_id']);
+            unset($_SESSION['username']);
+            unset($_SESSION['is_staff']);
+            unset($_SESSION['is_superuser']);
+        }
     }
     return null;
 }
 
 function login_required(): void {
-    if (empty($_SESSION['user_id'])) {
+    if (!is_authenticated()) {
         header('Location: /login.php?next=' . urlencode($_SERVER['REQUEST_URI']));
         exit;
     }
 }
 
 function admin_required(): void {
-    if (empty($_SESSION['user_id']) || empty($_SESSION['is_staff'])) {
+    $user = current_user();
+    if ($user === null || empty($user['is_staff'])) {
         header('Location: /admin/login.php');
         exit;
     }
 }
 
 function is_authenticated(): bool {
-    return !empty($_SESSION['user_id']);
+    return current_user() !== null;
 }
 
 // Password helpers (uses Django-compatible bcrypt via PHP password_hash)

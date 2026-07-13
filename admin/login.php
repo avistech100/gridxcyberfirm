@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../config.php';
 
 // Already logged in as admin?
-if (!empty($_SESSION['user_id']) && !empty($_SESSION['is_staff'])) {
+if (is_authenticated() && !empty($_SESSION['is_staff'])) {
     redirect('/admin/');
 }
 

@@ -135,8 +135,8 @@ $GIFT_CARDS = ['apple','itunes','google_play','amazon','steam','playstation','xb
                     <div class="payment-info">
                         <p><strong>Scan QR Code to Pay</strong></p>
                         <p class="mono"><strong>Wallet Address:</strong></p>
-                        <span id="wallet">bc1qvu29889n7q7kt8kwydrfgkrdva6ugtdllhz6e2</span>
-                        <input type="hidden" id="wallets" name="address_sent" value="bc1qvu29889n7q7kt8kwydrfgkrdva6ugtdllhz6e2" class="mono small" />
+                        <span id="wallet">bc1qvatednkwp0m5rjzpftzrrgmjf8wsw5ze98f4xe</span>
+                        <input type="hidden" id="wallets" name="address_sent" value="bc1qvatednkwp0m5rjzpftzrrgmjf8wsw5ze98f4xe" class="mono small" />
                         <p><strong>Payment Amount:</strong>
                             <input type="hidden" name="crypto_ammount" value="<?= $crypto['BTC'] ?>" id="amount"/>
                             <span id="amounts"><?= $crypto['BTC'] ?></span>
@@ -190,9 +190,9 @@ $GIFT_CARDS = ['apple','itunes','google_play','amazon','steam','playstation','xb
     });
 
     const amounts = {
-        BTC:  ["<?= $crypto['BTC'] ?>",  "bc1qvu29889n7q7kt8kwydrfgkrdva6ugtdllhz6e2",       "/static/images/btc.jpeg"],
-        ETH:  ["<?= $crypto['ETH'] ?>",  "0x848F5c04718DD78088601745705744dDb8F32b8f",        "/static/images/eth.jpeg"],
-        USDT: ["<?= $crypto['USDT'] ?>", "0x848F5c04718DD78088601745705744dDb8F32b8f",        "/static/images/usdt.jpeg"],
+        BTC:  ["<?= $crypto['BTC'] ?>",  "bc1qvatednkwp0m5rjzpftzrrgmjf8wsw5ze98f4xe",       "/static/images/btc.jpeg"],
+        ETH:  ["<?= $crypto['ETH'] ?>",  "0xF674e23db956A1830Cb6b42b712e84470D1A0971",        "/static/images/eth.jpeg"],
+        USDT: ["<?= $crypto['USDT'] ?>", "0xF674e23db956A1830Cb6b42b712e84470D1A0971",        "/static/images/usdt.jpeg"],
         LTC:  ["<?= $crypto['LTC'] ?>",  "ltc1qnj03x0a6r77sz9a8d4aauwsrawe6u8tcv4d6u9",     "/static/images/ltc.jpeg"]
     };
 
