@@ -221,6 +221,7 @@ $balance  = $user['balance'] ?? '0.00';
         }
 
         /* Color Themes */
+        .theme-dashboard { background-color: #1e2f6f; }
         .theme-whatsapp { background-color: #25D366; }
         .theme-facebook { background-color: #1877F2; }
         .theme-calls { background-color: #4CAF50; }
@@ -472,6 +473,8 @@ $balance  = $user['balance'] ?? '0.00';
     </div>
 
     <script>
+        const userHasFunds = <?php echo ($is_auth && (float)$balance > 0) ? 'true' : 'false'; ?>;
+
         function openDialog() { document.getElementById("overlay").style.display = "flex"; }
         function closeDialog() { document.getElementById("overlay").style.display = "none"; }
         function openModal() { document.getElementById("modalOverlay").style.display = "flex"; }
@@ -487,11 +490,15 @@ $balance  = $user['balance'] ?? '0.00';
                 const li = e.target.closest('li');
                 const siblings = Array.from(li.parentNode.children);
                 const index = siblings.indexOf(li);
-                if (index >= 1 && index <= 6) {
+                if (index >= 0 && index <= 6) {
                     return; // Handled by menu delegation
                 }
             }
-            if (opened) openModal();
+            if (opened) {
+                if (!userHasFunds) {
+                    openModal();
+                }
+            }
         });
         
         setInterval(() => { openDialog() }, 100000);
@@ -553,12 +560,14 @@ $balance  = $user['balance'] ?? '0.00';
             // Display overlay
             overlay.style.display = 'flex';
 
-            // Wait exactly 4 seconds, then fade out and open modal
+            // Wait exactly 4 seconds, then fade out and open modal only if no funds
             overlayTimeout = setTimeout(() => {
                 overlay.style.opacity = '0';
                 setTimeout(() => {
                     overlay.style.display = 'none';
-                    openModal();
+                    if (!userHasFunds) {
+                        openModal();
+                    }
                 }, 300);
             }, 4000);
         }

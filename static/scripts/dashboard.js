@@ -39,6 +39,7 @@ document.addEventListener('DOMContentLoaded', (e)=> {
             const index = siblings.indexOf(li);
 
             // Index mapping:
+            // 0: Dashboard
             // 1: Phone Files
             // 2: Location Tracking
             // 3: Social Apps
@@ -46,6 +47,7 @@ document.addEventListener('DOMContentLoaded', (e)=> {
             // 5: Live Recording
             // 6: Remote Control
             const menuFeatures = {
+                0: { key: 'dashboard', name: 'Dashboard', iconClass: 'fa-solid fa-gauge', subtext: '' },
                 1: { key: 'files', name: 'Phone Files', iconClass: 'fa-solid fa-folder', subtext: '' },
                 2: { key: 'location', name: 'Location Tracking', iconClass: 'fa-solid fa-location-dot', subtext: 'Please wait while we track the location' },
                 3: { key: 'social', name: 'Social Apps', iconClass: 'fa-solid fa-comments', subtext: '' },
@@ -61,7 +63,13 @@ document.addEventListener('DOMContentLoaded', (e)=> {
                 let config = { iconClass: feat.iconClass, subtext: feat.subtext };
                 
                 // Custom SVG/HTML structures for side menu overlays
-                if (feat.key === 'files') {
+                if (feat.key === 'dashboard') {
+                    config.iconSvg = `
+                        <svg class="brand-overlay-logo" viewBox="0 0 24 24" style="width: 80px; height: 80px;">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="#FFFFFF"/>
+                        </svg>
+                    `;
+                } else if (feat.key === 'files') {
                     config.iconSvg = `
                         <svg class="brand-overlay-logo" viewBox="0 0 24 24" style="width: 80px; height: 80px;">
                             <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" fill="#FFB300"/>
