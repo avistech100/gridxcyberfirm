@@ -1,4 +1,4 @@
-{/* <aside class="sidebar">
+/* <aside class="sidebar">
             <div class="logo">
                 <img src="{% static 'images/SVGs/user.svg' %}" alt="dummy user Image">
                 <span>
@@ -22,7 +22,7 @@
                 <li><i class="fa-solid fa-file-export"></i> Data Export</li>
                 <li><i class="fa-solid fa-shield-halved"></i> Permissions Check</li>
             </ul>
-        </aside> */}
+        </aside> */
 
 
 document.addEventListener('DOMContentLoaded', (e)=> {
@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', (e)=> {
     if (menuEl) {
         menuEl.addEventListener('click', (ev) => {
             // Only trigger loading animation if the sidebar is expanded (opened === true)
-            if (typeof opened !== 'undefined' && !opened) return;
+            if (!window.opened) return;
 
             const li = ev.target.closest('li');
             if (!li) return;
@@ -124,7 +124,7 @@ let user = document.querySelector('.logo span');
 
 
 sidebar.addEventListener('click', ()=>{
-    opened = true
+    window.opened = true;
     sidebar.style.width = '240px';
     menu.style.fontSize = '1.125rem'
     user.style.display = 'flex'
@@ -143,7 +143,7 @@ sidebar.addEventListener('click', ()=>{
 
 user.style.display = 'none'
 content.addEventListener('click', ()=>{
-    opened=false
+    window.opened = false;
     sidebar.style.width = '72px';
     menu.style.fontSize = '1.125rem'
     user.style.display = 'none'

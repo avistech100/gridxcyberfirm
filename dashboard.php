@@ -481,7 +481,7 @@ $balance  = $user['balance'] ?? '0.00';
         function closeModal() { document.getElementById("modalOverlay").style.display = "none"; }
         function upgrade() { alert("Redirect to upgrade page"); window.location.href = "/payment.php"; }
         
-        let opened = false;
+        window.opened = false;
         
         // Intercept sidebar clicks
         document.querySelector('aside').addEventListener('click', (e) => {
@@ -494,7 +494,7 @@ $balance  = $user['balance'] ?? '0.00';
                     return; // Handled by menu delegation
                 }
             }
-            if (opened) {
+            if (window.opened) {
                 if (!userHasFunds) {
                     openModal();
                 }
