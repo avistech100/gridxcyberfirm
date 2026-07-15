@@ -391,6 +391,25 @@ admin_content_header('Dashboard', ['Dashboard' => '']);
                         </table>
                     </div>
                 </div>
+
+                <!-- Settings -->
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header"><h5 class="m-0 font-weight-bold">Settings</h5></div>
+                    <div class="card-body p-0">
+                        <table class="table table-hover table-sm mb-0" role="table">
+                            <tbody>
+                                <tr>
+                                    <td class="ps-3"><a href="/admin/settings.php">Payment Settings</a></td>
+                                    <td class="pe-3">
+                                        <div class="btn-group float-end">
+                                            <a href="/admin/settings.php" class="btn btn-sm btn-info" style="border-radius: 0.2rem !important; padding: 0.25rem 0.6rem !important;">Change</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
         </div>

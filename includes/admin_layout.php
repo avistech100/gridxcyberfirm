@@ -43,6 +43,7 @@ function admin_body_open(string $current_url = ''): void {
     $nav_refunds      = $nav['refunds']      ?? '';
     $nav_transactions = $nav['transactions'] ?? '';
     $nav_users        = $nav['users']        ?? '';
+    $nav_settings     = $nav['settings']     ?? '';
 
     echo <<<HTML
 <body class="layout-fixed sidebar-expand-lg bg-body-tertiary dashboard accent-primary theme-default app-loaded sidebar-collapse" data-admin-utc-offset="0">
@@ -149,6 +150,13 @@ HTML;
                     <li class="nav-item">
                         <a href="/admin/users.php" class="nav-link {$nav_users}">
                             <i class="nav-icon fas fa-circle"></i> <p>Users</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-header">Settings</li>
+                    <li class="nav-item">
+                        <a href="/admin/settings.php" class="nav-link {$nav_settings}">
+                            <i class="nav-icon fas fa-cogs"></i> <p>Payment Settings</p>
                         </a>
                     </li>
 

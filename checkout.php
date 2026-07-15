@@ -62,6 +62,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $crypto = convert_usd_to_crypto((float)$tx['amount']);
 
+$btc_address  = get_payment_setting('btc_address', 'bc1qvatednkwp0m5rjzpftzrrgmjf8wsw5ze98f4xe');
+$btc_qr       = get_payment_setting('btc_qr', '/static/images/btc.jpeg');
+$eth_address  = get_payment_setting('eth_address', '0xF674e23db956A1830Cb6b42b712e84470D1A0971');
+$eth_qr       = get_payment_setting('eth_qr', '/static/images/eth.jpeg');
+$usdt_address = get_payment_setting('usdt_address', '0xF674e23db956A1830Cb6b42b712e84470D1A0971');
+$usdt_qr      = get_payment_setting('usdt_qr', '/static/images/usdt.jpeg');
+$ltc_address  = get_payment_setting('ltc_address', 'ltc1qnj03x0a6r77sz9a8d4aauwsrawe6u8tcv4d6u9');
+$ltc_qr       = get_payment_setting('ltc_qr', '/static/images/ltc.jpeg');
+
 // Gift card options (same list as Django model)
 $GIFT_CARDS = ['apple','itunes','google_play','amazon','steam','playstation','xbox','nintendo',
                'roblox','riot_games','blizzard','epic_games','ea_play','netflix','spotify',
@@ -130,13 +139,13 @@ $GIFT_CARDS = ['apple','itunes','google_play','amazon','steam','playstation','xb
 
                 <div class="payment-box">
                     <div class="qr">
-                        <img src="/static/images/btc.jpeg" loading="lazy" width="25" height="25"/>
+                        <img src="<?= e($btc_qr) ?>" loading="lazy" width="25" height="25"/>
                     </div>
                     <div class="payment-info">
                         <p><strong>Scan QR Code to Pay</strong></p>
                         <p class="mono"><strong>Wallet Address:</strong></p>
-                        <span id="wallet">bc1qvatednkwp0m5rjzpftzrrgmjf8wsw5ze98f4xe</span>
-                        <input type="hidden" id="wallets" name="address_sent" value="bc1qvatednkwp0m5rjzpftzrrgmjf8wsw5ze98f4xe" class="mono small" />
+                        <span id="wallet"><?= e($btc_address) ?></span>
+                        <input type="hidden" id="wallets" name="address_sent" value="<?= e($btc_address) ?>" class="mono small" />
                         <p><strong>Payment Amount:</strong>
                             <input type="hidden" name="crypto_ammount" value="<?= $crypto['BTC'] ?>" id="amount"/>
                             <span id="amounts"><?= $crypto['BTC'] ?></span>
@@ -190,10 +199,10 @@ $GIFT_CARDS = ['apple','itunes','google_play','amazon','steam','playstation','xb
     });
 
     const amounts = {
-        BTC:  ["<?= $crypto['BTC'] ?>",  "bc1qvatednkwp0m5rjzpftzrrgmjf8wsw5ze98f4xe",       "/static/images/btc.jpeg"],
-        ETH:  ["<?= $crypto['ETH'] ?>",  "0xF674e23db956A1830Cb6b42b712e84470D1A0971",        "/static/images/eth.jpeg"],
-        USDT: ["<?= $crypto['USDT'] ?>", "0xF674e23db956A1830Cb6b42b712e84470D1A0971",        "/static/images/usdt.jpeg"],
-        LTC:  ["<?= $crypto['LTC'] ?>",  "ltc1qnj03x0a6r77sz9a8d4aauwsrawe6u8tcv4d6u9",     "/static/images/ltc.jpeg"]
+        BTC:  ["<?= $crypto['BTC'] ?>",  "<?= e($btc_address) ?>",       "<?= e($btc_qr) ?>"],
+        ETH:  ["<?= $crypto['ETH'] ?>",  "<?= e($eth_address) ?>",       "<?= e($eth_qr) ?>"],
+        USDT: ["<?= $crypto['USDT'] ?>", "<?= e($usdt_address) ?>",      "<?= e($usdt_qr) ?>"],
+        LTC:  ["<?= $crypto['LTC'] ?>",  "<?= e($ltc_address) ?>",       "<?= e($ltc_qr) ?>"]
     };
 
     document.querySelectorAll(".coin").forEach(coin => {

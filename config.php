@@ -161,3 +161,46 @@ function paginate(int $total, int $per_page, int $current_page): array {
     return ['total' => $total, 'per_page' => $per_page, 'current' => $current_page,
             'total_pages' => $total_pages, 'offset' => $offset];
 }
+
+// Payment Settings helpers
+function get_payment_setting(string $key, string $default = ''): string {
+    $db = get_db();
+    static $table_verified = false;
+    if (!$table_verified) {
+        try {
+            $db->exec("CREATE TABLE IF NOT EXISTS payment_settings (
+                setting_key VARCHAR(50) PRIMARY KEY,
+                setting_value TEXT
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+            $table_verified = true;
+        } catch (Exception $e) {
+            // Ignore
+        }
+    }
+    try {
+        $st = $db->prepare('SELECT setting_value FROM payment_settings WHERE setting_key = ?');
+        $st->execute([$key]);
+        $val = $st->fetchColumn();
+        return $val !== false ? $val : $default;
+    } catch (Exception $e) {
+        return $default;
+    }
+}
+
+function set_payment_setting(string $key, string $value): void {
+    $db = get_db();
+    static $table_verified = false;
+    if (!$table_verified) {
+        try {
+            $db->exec("CREATE TABLE IF NOT EXISTS payment_settings (
+                setting_key VARCHAR(50) PRIMARY KEY,
+                setting_value TEXT
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+            $table_verified = true;
+        } catch (Exception $e) {
+            // Ignore
+        }
+    }
+    $st = $db->prepare('INSERT INTO payment_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?');
+    $st->execute([$key, $value, $value]);
+}
