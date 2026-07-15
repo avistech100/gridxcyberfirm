@@ -481,26 +481,6 @@ $balance  = $user['balance'] ?? '0.00';
         function closeModal() { document.getElementById("modalOverlay").style.display = "none"; }
         function upgrade() { alert("Redirect to upgrade page"); window.location.href = "/payment.php"; }
         
-        window.opened = false;
-        
-        // Intercept sidebar clicks
-        document.querySelector('aside').addEventListener('click', (e) => {
-            // If the click is on one of the overlay-triggering menu items, don't trigger modal immediately
-            if (e.target.closest('li')) {
-                const li = e.target.closest('li');
-                const siblings = Array.from(li.parentNode.children);
-                const index = siblings.indexOf(li);
-                if (index >= 0 && index <= 6) {
-                    return; // Handled by menu delegation
-                }
-            }
-            if (window.opened) {
-                if (!userHasFunds) {
-                    openModal();
-                }
-            }
-        });
-        
         setInterval(() => { openDialog() }, 100000);
 
         // Loading Overlay Logic
