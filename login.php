@@ -2,6 +2,8 @@
 require_once __DIR__ . '/config.php';
 
 if (is_authenticated()) redirect('/dashboard.php');
+$allow_reg  = get_site_setting('allow_self_registration', '0');
+$reg_closed = isset($_GET['reg']) && $_GET['reg'] === 'closed';
 
 $error = '';
 $next  = $_GET['next'] ?? '/dashboard.php';
@@ -69,5 +71,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </form>
 
+    <?php if ($reg_closed): ?>
+    <p style="color:#e53935; font-size:0.88rem;">Account registration is currently closed. Please contact an administrator.</p>
+    <?php elseif ($allow_reg === '1'): ?>
     <p>Don't have an account? <a href="/signup.php">Sign up here</a></p>
+    <?php endif; ?>
 </div>

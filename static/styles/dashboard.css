@@ -419,10 +419,38 @@ p {
   background: #c62828;
 }
 
+/* ── Hamburger toggle button (mobile only) ── */
+.sidebar-toggle {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 200001;
+    background: #1e2f6f;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    width: 40px;
+    height: 40px;
+    font-size: 1.3rem;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Sidebar overlay backdrop (mobile) */
+.sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 200000;
+}
+
 /* ---------- RESPONSIVE MEDIA QUERIES ---------- */
 
-/* Tablets and Mobile (less than 992px) */
-@media (max-width: 991.98px) {
+/* Tablets (768px – 1199px): icon-only sidebar */
+@media (max-width: 1199.98px) and (min-width: 769px) {
     .sidebar {
         width: 72px;
     }
@@ -448,10 +476,6 @@ p {
         margin-right: 0;
         margin-top: 0;
     }
-}
-
-/* Tablets (768px to 991.98px) */
-@media (max-width: 768px) {
     .content {
         padding: 15px;
     }
@@ -460,16 +484,40 @@ p {
     }
 }
 
-/* Mobile Devices (576px and down) */
-@media (max-width: 576px) {
+/* Mobile Devices (768px and below): slide-in sidebar drawer */
+@media (max-width: 768px) {
+    .sidebar-toggle {
+        display: flex;
+    }
+
+    .sidebar {
+        position: fixed;
+        left: -260px;
+        top: 0;
+        height: 100vh;
+        width: 240px;
+        z-index: 200001;
+        transition: left 0.3s ease;
+        overflow-y: auto;
+    }
+    .sidebar.open {
+        left: 0;
+    }
+    .sidebar-backdrop.open {
+        display: block;
+    }
+
+    .content {
+        padding: 60px 15px 15px;
+    }
     .top-bar {
         flex-direction: column;
         align-items: flex-start;
-        gap: 12px;
+        gap: 10px;
         padding-bottom: 12px;
     }
     .top-bar h1 {
-        font-size: 1.6rem;
+        font-size: 1.5rem;
     }
     .wallet-bal {
         flex-direction: column;
@@ -480,6 +528,9 @@ p {
     .wallet-bal .bal_view {
         justify-content: flex-start;
     }
+    .wallet-bal i {
+        font-size: 2rem;
+    }
     .trans {
         align-items: flex-start;
         gap: 8px;
@@ -487,10 +538,15 @@ p {
     .fund {
         width: 100%;
         text-align: center;
+        display: block;
     }
+}
+
+/* Small Mobile (480px and below) */
+@media (max-width: 480px) {
     .cards {
         grid-template-columns: 1fr;
-        gap: 12px;
+        gap: 10px;
     }
     .card {
         padding: 12px;
@@ -500,23 +556,31 @@ p {
         font-size: 1rem;
     }
     .card-desc {
-        font-size: 0.8rem;
+        font-size: 0.78rem;
     }
     .screen-time {
-        padding: 15px;
+        padding: 12px;
+    }
+    h2 {
+        font-size: 1.2rem;
+        margin: 1rem 0;
     }
     .dialog, .modal {
         width: 95%;
-        padding: 20px 15px;
+        padding: 20px 12px;
     }
     .fullscreen-overlay {
         padding: 15px;
     }
     .descriptive-overlay-name {
-        font-size: 1.4rem;
+        font-size: 1.3rem;
         text-align: center;
     }
     .overlay-subtext {
-        font-size: 0.95rem;
+        font-size: 0.9rem;
+    }
+    .brand-overlay-logo {
+        width: 60px;
+        height: 60px;
     }
 }

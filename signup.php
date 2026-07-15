@@ -3,6 +3,13 @@ require_once __DIR__ . '/config.php';
 
 if (is_authenticated()) redirect('/dashboard.php');
 
+// Check if self-registration is allowed
+$allow_reg = get_site_setting('allow_self_registration', '0');
+if ($allow_reg !== '1') {
+    // Redirect to login with a notice
+    redirect('/login.php?reg=closed');
+}
+
 $errors = [];
 $success = false;
 

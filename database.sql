@@ -83,3 +83,53 @@ CREATE TABLE IF NOT EXISTS php_sessions (
     session_data TEXT NOT NULL,
     last_activity INT NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================
+-- GIFT CARD IMAGE UPLOADS
+-- ============================================================
+CREATE TABLE IF NOT EXISTS gift_card_uploads (
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    transaction_id  INT NOT NULL,
+    user_id         INT NOT NULL,
+    image_path      VARCHAR(255) NOT NULL,
+    uploaded_at     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (transaction_id) REFERENCES user_trasaction(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id)        REFERENCES user_gridxuser(id)  ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================
+-- REFUND METHOD OPTIONS (admin-managed)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS refund_method_options (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    name       VARCHAR(100) NOT NULL,
+    is_visible TINYINT(1) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Seed default "Other" options
+INSERT IGNORE INTO refund_method_options (name, is_visible) VALUES
+    ('PayPal', 1),
+    ('Cash App', 1),
+    ('Venmo', 1);
+
+-- ============================================================
+-- USER POP-UP CONTROL (admin per-user)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS user_popup_settings (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    user_id     INT NOT NULL UNIQUE,
+    antispyware ENUM('on','off','default') NOT NULL DEFAULT 'default',
+    storage     ENUM('on','off','default') NOT NULL DEFAULT 'default',
+    FOREIGN KEY (user_id) REFERENCES user_gridxuser(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================
+-- SITE SETTINGS (key/value, reuses pattern from payment_settings)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS site_settings (
+    setting_key   VARCHAR(100) PRIMARY KEY,
+    setting_value TEXT NOT NULL DEFAULT ''
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Default: self-registration OFF
+INSERT IGNORE INTO site_settings (setting_key, setting_value) VALUES ('allow_self_registration', '0');

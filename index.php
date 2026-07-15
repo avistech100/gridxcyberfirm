@@ -1,4 +1,7 @@
-<?php require_once __DIR__ . "/config.php"; ?>
+<?php
+require_once __DIR__ . "/config.php";
+$allow_reg = get_site_setting('allow_self_registration', '0');
+?>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -76,6 +79,43 @@
             border: 2px solid var(--secondary) !important;
             font-weight: 700 !important;
         }
+
+        /* Nav auth buttons */
+        .nav-auth-btns {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .nav-btn {
+            display: inline-block;
+            padding: 7px 16px;
+            border-radius: 20px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        .nav-btn-login {
+            color: #fff;
+            border: 1.5px solid rgba(255,255,255,0.6);
+            background: transparent;
+        }
+        .nav-btn-login:hover {
+            background: rgba(255,255,255,0.15);
+        }
+        .nav-btn-signup {
+            color: #1e2f6f;
+            background: #ffffff;
+            border: 1.5px solid #ffffff;
+        }
+        .nav-btn-signup:hover {
+            background: #e8ecf8;
+        }
+        @media (max-width: 768px) {
+            .nav-auth-btns { display: none; }
+        }
         
         .contact-right form button:hover {
             border-color: var(--primary) !important;
@@ -100,6 +140,12 @@
             <li><a href="#faq">FAQ ?</a></li>
             <li><a href="#contact">Contact us</a></li>
         </ul>
+        <div class="nav-auth-btns">
+            <a href="/login.php" class="nav-btn nav-btn-login">Login</a>
+            <?php if ($allow_reg === '1'): ?>
+            <a href="/signup.php" class="nav-btn nav-btn-signup">Sign Up</a>
+            <?php endif; ?>
+        </div>
         <div class="display">
             <img loading="lazy" id="li-display" src="/static//images/SVGs/hambuger.svg" alt="list icon" width="30" height="30">
         </div>

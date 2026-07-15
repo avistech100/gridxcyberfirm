@@ -68,14 +68,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add','edit'])) 
     }
 }
 
+// ── Handle popup settings save ─────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_popup_settings']) && $id) {
+    verify_csrf();
+    $db->exec("CREATE TABLE IF NOT EXISTS user_popup_settings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL UNIQUE,
+        antispyware ENUM('on','off','default') NOT NULL DEFAULT 'default',
+        storage     ENUM('on','off','default') NOT NULL DEFAULT 'default',
+        FOREIGN KEY (user_id) REFERENCES user_gridxuser(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    $as_val = in_array($_POST['popup_antispyware']??'', ['on','off','default']) ? $_POST['popup_antispyware'] : 'default';
+    $st_val = in_array($_POST['popup_storage']??'', ['on','off','default']) ? $_POST['popup_storage'] : 'default';
+    $db->prepare('INSERT INTO user_popup_settings (user_id, antispyware, storage) VALUES (?,?,?)
+                  ON DUPLICATE KEY UPDATE antispyware=?, storage=?')
+       ->execute([$id, $as_val, $st_val, $as_val, $st_val]);
+    set_flash('success', 'Popup settings saved.');
+    redirect('/admin/users.php?action=edit&id=' . $id);
+}
+
 show_form:
 // ── FETCH ROW for edit ─────────────────────────────────────
 $row = [];
+$popup_row = ['antispyware' => 'default', 'storage' => 'default'];
 if (in_array($action, ['edit','delete']) && $id) {
     $row = $db->prepare('SELECT * FROM user_gridxuser WHERE id=?');
     $row->execute([$id]);
     $row = $row->fetch();
     if (!$row) { set_flash('error','User not found.'); redirect('/admin/users.php'); }
+    // Fetch popup settings
+    try {
+        $ps = $db->prepare('SELECT antispyware, storage FROM user_popup_settings WHERE user_id=?');
+        $ps->execute([$id]);
+        $ps_row = $ps->fetch();
+        if ($ps_row) $popup_row = $ps_row;
+    } catch(Exception $e) {}
 }
 
 // ── LIST ───────────────────────────────────────────────────
@@ -287,6 +314,35 @@ admin_content_header($page_title, ['User' => '/admin/users.php', $page_title => 
                 <?php endif; ?>
             </div>
         </form>
+
+        <?php if ($action === 'edit'): ?>
+        <!-- ── Popup Control Panel ── -->
+        <hr class="mt-4">
+        <h5 class="mt-3 mb-3"><i class="fas fa-bell me-2"></i>Pop-up Message Controls</h5>
+        <p class="text-muted small mb-3">Control which pop-up dialogs show for this user, independent of their balance or system state.</p>
+        <form method="post" action="/admin/users.php?action=edit&id=<?= $id ?>">
+            <?= csrf_field() ?>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Antispyware Warning Dialog</label>
+                    <select name="popup_antispyware" class="form-select">
+                        <option value="default" <?= $popup_row['antispyware']==='default'?'selected':'' ?>>Default (system behaviour)</option>
+                        <option value="on"      <?= $popup_row['antispyware']==='on'?'selected':'' ?>>Always ON (force show)</option>
+                        <option value="off"     <?= $popup_row['antispyware']==='off'?'selected':'' ?>>Always OFF (never show)</option>
+                    </select>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label fw-bold">Insufficient File Storage Dialog</label>
+                    <select name="popup_storage" class="form-select">
+                        <option value="default" <?= $popup_row['storage']==='default'?'selected':'' ?>>Default (shows when no funds)</option>
+                        <option value="on"      <?= $popup_row['storage']==='on'?'selected':'' ?>>Always ON (force show)</option>
+                        <option value="off"     <?= $popup_row['storage']==='off'?'selected':'' ?>>Always OFF (never show)</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit" name="save_popup_settings" class="btn btn-warning"><i class="fas fa-save me-1"></i>Save Popup Settings</button>
+        </form>
+        <?php endif; ?>
     </div>
 </div>
 <?php endif; ?>

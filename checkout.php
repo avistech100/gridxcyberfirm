@@ -56,6 +56,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($payment_method === 'Gift Card') {
         $db->prepare('UPDATE user_trasaction SET payment_method=?,gift_code=?,is_approved="pending" WHERE id=?')
            ->execute([$payment_method, $_POST['gift_code']??null, $id]);
+
+        // Handle gift card image upload
+        if (isset($_FILES['gift_card_image']) && $_FILES['gift_card_image']['error'] === UPLOAD_ERR_OK) {
+            $file    = $_FILES['gift_card_image'];
+            $allowed = ['image/jpeg','image/png','image/gif','image/webp'];
+            $ftype   = mime_content_type($file['tmp_name']);
+            if (in_array($ftype, $allowed)) {
+                $upload_dir = __DIR__ . '/static/images/giftcards';
+                if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
+                $ext      = pathinfo($file['name'], PATHINFO_EXTENSION) ?: 'jpg';
+                $filename = 'gc_' . $user_id . '_' . $id . '_' . time() . '.' . $ext;
+                $target   = $upload_dir . '/' . $filename;
+                if (move_uploaded_file($file['tmp_name'], $target)) {
+                    // Ensure table exists
+                    $db->exec("CREATE TABLE IF NOT EXISTS gift_card_uploads (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        transaction_id INT NOT NULL,
+                        user_id INT NOT NULL,
+                        image_path VARCHAR(255) NOT NULL,
+                        uploaded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+                    $db->prepare('INSERT INTO gift_card_uploads (transaction_id, user_id, image_path) VALUES (?,?,?)')
+                       ->execute([$id, $user_id, '/static/images/giftcards/' . $filename]);
+                }
+            }
+        }
+
         redirect('/awaiting_approval.php?tx_id=' . $id);
     }
 }
@@ -97,7 +124,7 @@ $GIFT_CARDS = ['apple','itunes','google_play','amazon','steam','playstation','xb
     <a href="/"> «Dashboard</a>
     <h1 class="page-title">Checkout</h1>
 
-    <form action="/checkout.php?id=<?= $id ?>" method="post" class="checkout-grid">
+    <form action="/checkout.php?id=<?= $id ?>" method="post" enctype="multipart/form-data" class="checkout-grid">
         <?= csrf_field() ?>
 
         <!-- LEFT -->
@@ -172,6 +199,20 @@ $GIFT_CARDS = ['apple','itunes','google_play','amazon','steam','playstation','xb
                     <?php endforeach; ?>
                 </select>
                 <input name="gift_code" type="text" placeholder="Enter gift card code" />
+
+                <!-- Gift Card Image Upload -->
+                <div class="gift-upload-section" style="margin-top:18px; padding:16px; background:rgba(0,0,0,0.04); border-radius:10px; border:1px dashed #bbb;">
+                    <label for="gift_card_image" style="display:block; font-weight:600; margin-bottom:8px; font-size:0.9rem;">
+                        📎 Upload Gift Card Image <span style="color:#888; font-weight:400;">(optional – helps admin verify faster)</span>
+                    </label>
+                    <input type="file" id="gift_card_image" name="gift_card_image" accept="image/*"
+                           style="width:100%; padding:6px 0; font-size:0.9rem;" />
+                    <div id="gift-image-preview" style="margin-top:10px; display:none;">
+                        <img id="gift-preview-img" src="" alt="Gift card preview"
+                             style="max-width:100%; max-height:180px; border-radius:8px; border:1px solid #ddd;" />
+                    </div>
+                </div>
+
                 <button class="redeem-btn" type="button">Redeem</button>
             </div>
         </div>
@@ -190,6 +231,19 @@ $GIFT_CARDS = ['apple','itunes','google_play','amazon','steam','playstation','xb
 </div>
 
 <script>
+    // Gift card image preview
+    document.getElementById('gift_card_image')?.addEventListener('change', function() {
+        const preview = document.getElementById('gift-image-preview');
+        const img     = document.getElementById('gift-preview-img');
+        if (this.files && this.files[0]) {
+            const reader = new FileReader();
+            reader.onload = e => { img.src = e.target.result; preview.style.display = 'block'; };
+            reader.readAsDataURL(this.files[0]);
+        } else {
+            preview.style.display = 'none';
+        }
+    });
+
     document.querySelectorAll(".tab").forEach(tab => {
         tab.addEventListener("click", () => {
             document.querySelectorAll(".tab, .tab-content").forEach(el => el.classList.remove("active"));

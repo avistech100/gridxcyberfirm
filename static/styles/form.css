@@ -1,125 +1,199 @@
+/* ============================================================
+   GridX — Auth Pages (Login & Sign-up)
+   White Glassy / Frosty Theme
+   ============================================================ */
+
 :root {
-    --black: #0e0d0d;
-    --white: #e7dede;
-    --primary: #ff004f;
-    --secondary: #b54769;
-    --grey: #333;
+    --accent: #1e2f6f;
+    --accent-light: #2d44a0;
+    --danger: #e53935;
+    --text-dark: #1a1a2e;
+    --text-muted: #555;
+    --glass-bg: rgba(255, 255, 255, 0.75);
+    --glass-border: rgba(255, 255, 255, 0.6);
+    --input-border: #c8d0e7;
+    --shadow: 0 8px 32px rgba(30, 47, 111, 0.18);
 }
 
-body{
-    display: grid;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(to right, var(--primary), #1e2f6f);
+*, *::before, *::after {
+    box-sizing: border-box;
     margin: 0;
     padding: 0;
-    background-size: cover;
-    
-    color: var(--white);
-    font-family: 'Rubik', Arial, Helvetica, sans-serif;
 }
 
-h2, p{
-    text-align: center;
-}
-
-.auth-container{
-    background-color: rgba(90, 91, 92, 0.308);
-    border: 1px solid rgb(185, 184, 184);
-    backdrop-filter: blur(10px);
-    padding: 2rem;
-    border-radius: 5px;
-    max-width: 700px;
-    box-shadow: 5px 6px 4px rgba(22, 22, 22, 0.548);
-}
-
-input{
-    font-size: 1rem;
-    max-width: 450px;
-    height: 2rem;
-    outline: none;
-    border-bottom: 2px solid var(--white);
-    border-top: none;
-    border-left: none;
-    border-right: none;
-    /* border-radius: 5px; */
-    background: none;
-    color: #d3c6c6;
-}
-
-/* input:focus-visible{
-} */
-
-.form-group{
-    width: 100%;
-    display: grid;
-    margin-bottom: 1rem; 
-}
-
-button{
-    background-color: var(--white);
-    color: var(--grey);
-    border: none;
-    padding: .5rem 1rem;
-    font-size: 1rem;
-    font-weight: bold;
-    border-radius: .4rem;
-    margin-top: 1rem;
-}
-
-a{
-    color: var(--black);
-    text-decoration: none;
-}
-
-form > .errorlist{
-    background-color: var(--white);
-    color: var(--grey);
-    padding: .8rem;
-    border-radius: .5rem;
-    border: 1px solid red;
-    max-width: 100%;
-}
-
-form > .errorlist > li{
-    list-style-type: none;
-}
-
-label{
+body {
+    min-height: 100vh;
     display: flex;
     align-items: center;
-    column-gap: .5rem;
+    justify-content: center;
+    padding: 2rem 1rem;
+    font-family: 'Rubik', 'Segoe UI', Arial, sans-serif;
+    color: var(--text-dark);
+    background:
+        radial-gradient(ellipse at 20% 20%, rgba(30, 47, 111, 0.25) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 80%, rgba(100, 130, 255, 0.15) 0%, transparent 55%),
+        linear-gradient(135deg, #e8ecf8 0%, #f5f7ff 50%, #eef1fb 100%);
+    background-attachment: fixed;
 }
 
-/* ---------- RESPONSIVE MEDIA QUERIES ---------- */
-@media (max-width: 768px) {
-    body {
-        padding: 1.5rem 1rem;
-        height: auto;
-        min-height: 100vh;
-        box-sizing: border-box;
-    }
+/* Frosted glass card */
+.auth-container {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-radius: 20px;
+    padding: 2.5rem 2.5rem 2rem;
+    width: 100%;
+    max-width: 460px;
+    box-shadow: var(--shadow), 0 1px 0 rgba(255,255,255,0.9) inset;
+}
+
+/* Back link */
+.auth-container > a:first-child {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.85rem;
+    color: var(--accent);
+    text-decoration: none;
+    margin-bottom: 1.4rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    transition: color 0.2s;
+}
+.auth-container > a:first-child:hover { color: var(--accent-light); }
+
+/* Heading */
+h2 {
+    font-size: 1.55rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-align: center;
+    margin-bottom: 1.6rem;
+    letter-spacing: -0.01em;
+}
+
+p { text-align: center; }
+
+/* Form groups */
+.form-group {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 1.1rem;
+}
+
+label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+    width: 100%;
+    height: 2.7rem;
+    padding: 0 0.9rem;
+    font-size: 1rem;
+    font-family: inherit;
+    color: var(--text-dark);
+    background: rgba(255,255,255,0.85);
+    border: 1.5px solid var(--input-border);
+    border-radius: 10px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    max-width: 100%;
+}
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(30, 47, 111, 0.12);
+    background: #fff;
+}
+
+/* Submit button */
+button[type="submit"],
+button.btn {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    margin-top: 1.2rem;
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: inherit;
+    letter-spacing: 0.03em;
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(30, 47, 111, 0.3);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+button[type="submit"]:hover,
+button.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(30, 47, 111, 0.4);
+}
+button[type="submit"]:active,
+button.btn:active {
+    transform: translateY(0);
+}
+
+/* Inline link (Forgotten password) */
+form > div { margin-top: 0.8rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+form > div a { font-size: 0.88rem; color: var(--accent); text-decoration: none; }
+form > div a:hover { text-decoration: underline; }
+
+/* Bottom paragraph */
+.auth-container > p {
+    margin-top: 1.4rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+.auth-container > p a {
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: none;
+}
+.auth-container > p a:hover { text-decoration: underline; }
+
+/* Error messages */
+[style*="color:red"] { font-size: 0.88rem; text-align: left; margin-bottom: 0.8rem; }
+[style*="color:red"] ul { padding-left: 1.2rem; }
+
+form > .errorlist {
+    background: rgba(229, 57, 53, 0.08);
+    border: 1px solid rgba(229, 57, 53, 0.35);
+    color: var(--danger);
+    padding: 0.7rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 0.88rem;
+}
+form > .errorlist > li { list-style: disc; margin-left: 1rem; }
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+    body { padding: 1.2rem 0.75rem; align-items: flex-start; padding-top: 2rem; }
     .auth-container {
-        padding: 1.5rem;
-        width: 100%;
-        max-width: 450px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-    }
-    input {
-        width: 100%;
+        padding: 2rem 1.4rem 1.6rem;
+        border-radius: 16px;
         max-width: 100%;
     }
+    h2 { font-size: 1.3rem; margin-bottom: 1.2rem; }
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] { font-size: 0.95rem; }
 }
 
-@media (max-width: 480px) {
-    body {
-        padding: 1rem 0.5rem;
-    }
-    .auth-container {
-        padding: 1.2rem 1rem;
-        border-radius: 8px;
-    }
-    h2 {
-        font-size: 1.5rem;
-    }
+@media (max-width: 380px) {
+    .auth-container { padding: 1.6rem 1rem 1.4rem; }
+    h2 { font-size: 1.15rem; }
+    button[type="submit"], button.btn { font-size: 0.95rem; }
 }

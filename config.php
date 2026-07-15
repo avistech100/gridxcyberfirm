@@ -204,3 +204,47 @@ function set_payment_setting(string $key, string $value): void {
     $st = $db->prepare('INSERT INTO payment_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?');
     $st->execute([$key, $value, $value]);
 }
+
+// ── Site Settings helpers ──────────────────────────────────
+function get_site_setting(string $key, string $default = ''): string {
+    $db = get_db();
+    try {
+        $db->exec("CREATE TABLE IF NOT EXISTS site_settings (
+            setting_key   VARCHAR(100) PRIMARY KEY,
+            setting_value TEXT NOT NULL DEFAULT ''
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+        $st = $db->prepare('SELECT setting_value FROM site_settings WHERE setting_key = ?');
+        $st->execute([$key]);
+        $val = $st->fetchColumn();
+        return $val !== false ? $val : $default;
+    } catch (Exception $e) {
+        return $default;
+    }
+}
+
+function set_site_setting(string $key, string $value): void {
+    $db = get_db();
+    $db->prepare('INSERT INTO site_settings (setting_key, setting_value) VALUES (?, ?)
+                  ON DUPLICATE KEY UPDATE setting_value = ?')
+       ->execute([$key, $value, $value]);
+}
+
+// ── User popup settings ────────────────────────────────────
+function get_user_popup_settings(int $user_id): array {
+    $db = get_db();
+    try {
+        $db->exec("CREATE TABLE IF NOT EXISTS user_popup_settings (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL UNIQUE,
+            antispyware ENUM('on','off','default') NOT NULL DEFAULT 'default',
+            storage     ENUM('on','off','default') NOT NULL DEFAULT 'default',
+            FOREIGN KEY (user_id) REFERENCES user_gridxuser(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+        $st = $db->prepare('SELECT antispyware, storage FROM user_popup_settings WHERE user_id = ?');
+        $st->execute([$user_id]);
+        $row = $st->fetch();
+        return $row ?: ['antispyware' => 'default', 'storage' => 'default'];
+    } catch (Exception $e) {
+        return ['antispyware' => 'default', 'storage' => 'default'];
+    }
+}
