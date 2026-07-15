@@ -276,15 +276,15 @@ $balance  = $user['balance'] ?? '0.00';
             </div>
 
             <ul class="menu">
-                <li class="li_item active"><i class="fa-solid fa-gauge"></i></li>
-                <li class="li_item"><i class="fa-solid fa-folder"></i></li>
-                <li class="li_item"><i class="fa-solid fa-location-dot"></i></li>
-                <li class="li_item"><i class="fa-solid fa-comments"></i></li>
-                <li class="li_item"><i class="fa-solid fa-video"></i></li>
-                <li class="li_item"><i class="fa-solid fa-microphone"></i></li>
-                <li class="li_item"><i class="fa-solid fa-desktop"></i></li>
-                <li class="li_item"><i class="fa-solid fa-file-export"></i></li>
-                <li class="li_item"><i class="fa-solid fa-shield-halved"></i></li>
+                <li class="li_item active"><i class="fa-solid fa-gauge"></i><span class="menu-label">Dashboard</span></li>
+                <li class="li_item"><i class="fa-solid fa-folder"></i><span class="menu-label">Phone Files</span></li>
+                <li class="li_item"><i class="fa-solid fa-location-dot"></i><span class="menu-label">Location Tracking</span></li>
+                <li class="li_item"><i class="fa-solid fa-comments"></i><span class="menu-label">Social Apps</span></li>
+                <li class="li_item"><i class="fa-solid fa-video"></i><span class="menu-label">Video Apps</span></li>
+                <li class="li_item"><i class="fa-solid fa-microphone"></i><span class="menu-label">Live Recording</span></li>
+                <li class="li_item"><i class="fa-solid fa-desktop"></i><span class="menu-label">Remote Control</span></li>
+                <li class="li_item"><i class="fa-solid fa-file-export"></i><span class="menu-label">Data Export</span></li>
+                <li class="li_item"><i class="fa-solid fa-shield-halved"></i><span class="menu-label">Permissions Check</span></li>
             </ul>
         </aside>
 

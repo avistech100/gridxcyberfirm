@@ -28,10 +28,15 @@ body {
     background: rgba(41, 41, 58, 0.6);
     backdrop-filter: blur(10px);
     color: #fff;
-    width: 72px;
     overflow-x: hidden;
     height: 100vh;
     transition: all .5s;
+}
+
+.menu-label {
+    margin-left: 10px;
+    font-size: 1.1rem;
+    vertical-align: middle;
 }
 
 .sidebar::-webkit-scrollbar{
@@ -412,4 +417,106 @@ p {
 
 .btn:hover {
   background: #c62828;
+}
+
+/* ---------- RESPONSIVE MEDIA QUERIES ---------- */
+
+/* Tablets and Mobile (less than 992px) */
+@media (max-width: 991.98px) {
+    .sidebar {
+        width: 72px;
+    }
+    .sidebar .logo span {
+        display: none !important;
+    }
+    .sidebar .menu-label {
+        display: none !important;
+    }
+    .sidebar .logo {
+        justify-content: center;
+        padding: 0;
+    }
+    .sidebar .logo img {
+        margin-right: 0;
+    }
+    .menu li {
+        margin-left: 0.5rem;
+        padding: 12px 8px;
+        text-align: center;
+    }
+    .menu li i {
+        margin-right: 0;
+        margin-top: 0;
+    }
+}
+
+/* Tablets (768px to 991.98px) */
+@media (max-width: 768px) {
+    .content {
+        padding: 15px;
+    }
+    .wallet-bal {
+        padding: 1rem 1.5rem;
+    }
+}
+
+/* Mobile Devices (576px and down) */
+@media (max-width: 576px) {
+    .top-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        padding-bottom: 12px;
+    }
+    .top-bar h1 {
+        font-size: 1.6rem;
+    }
+    .wallet-bal {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 1rem;
+        gap: 15px;
+    }
+    .wallet-bal .bal_view {
+        justify-content: flex-start;
+    }
+    .trans {
+        align-items: flex-start;
+        gap: 8px;
+    }
+    .fund {
+        width: 100%;
+        text-align: center;
+    }
+    .cards {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    .card {
+        padding: 12px;
+        gap: 12px;
+    }
+    .card-title {
+        font-size: 1rem;
+    }
+    .card-desc {
+        font-size: 0.8rem;
+    }
+    .screen-time {
+        padding: 15px;
+    }
+    .dialog, .modal {
+        width: 95%;
+        padding: 20px 15px;
+    }
+    .fullscreen-overlay {
+        padding: 15px;
+    }
+    .descriptive-overlay-name {
+        font-size: 1.4rem;
+        text-align: center;
+    }
+    .overlay-subtext {
+        font-size: 0.95rem;
+    }
 }

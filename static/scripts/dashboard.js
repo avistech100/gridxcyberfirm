@@ -1,38 +1,8 @@
-/* <aside class="sidebar">
-            <div class="logo">
-                <img src="{% static 'images/SVGs/user.svg' %}" alt="dummy user Image">
-                <span>
-                    {% if user.is_authenticated %}
-                        <p>{{ user.username }}</p>
-                    {% else %}
-                        <strong>John</strong>
-                    {% endif %}
-                </span>
-            </div>
-            
-
-            <ul class="menu">
-                <li class="active"><i class="fa-solid fa-gauge"></i> Dashboard</li>
-                <li><i class="fa-solid fa-folder"></i> Phone Files</li>
-                <li><i class="fa-solid fa-location-dot"></i> Location Tracking</li>
-                <li><i class="fa-solid fa-comments"></i> Social Apps</li>
-                <li><i class="fa-solid fa-video"></i> Video Apps</li>
-                <li><i class="fa-solid fa-microphone"></i> Live Recording</li>
-                <li><i class="fa-solid fa-desktop"></i> Remote Control</li>
-                <li><i class="fa-solid fa-file-export"></i> Data Export</li>
-                <li><i class="fa-solid fa-shield-halved"></i> Permissions Check</li>
-            </ul>
-        </aside> */
-
-
 let sidebar = document.querySelector('.sidebar');
 let menu = document.querySelector('.menu');
 let content = document.querySelector('.content');
-let user = document.querySelector('.logo span');
 
-window.opened = false;
-
-// Features map for sidebar menu items (by their position index in the list)
+// Features map for sidebar menu items (by their position index in the list, 0 to 8)
 const menuFeatures = {
     0: {
         key: 'dashboard', name: 'Dashboard',
@@ -68,67 +38,40 @@ const menuFeatures = {
         key: 'control', name: 'Remote Control',
         iconSvg: `<svg class="brand-overlay-logo" viewBox="0 0 24 24" style="width:80px;height:80px;"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm0 14H3V5h18v12zM10 7.5l6 4.5-6 4.5v-9z" fill="#FFFFFF"/></svg>`,
         subtext: 'Connecting to device...'
+    },
+    7: {
+        key: 'files', name: 'Data Export',
+        iconSvg: `<svg class="brand-overlay-logo" viewBox="0 0 24 24" style="width:80px;height:80px;"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z" fill="#FFB300"/></svg>`,
+        subtext: 'Preparing data export...'
+    },
+    8: {
+        key: 'dashboard', name: 'Permissions Check',
+        iconSvg: `<svg class="brand-overlay-logo" viewBox="0 0 24 24" style="width:80px;height:80px;"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" fill="#FFFFFF"/></svg>`,
+        subtext: 'Scanning permissions...'
     }
 };
 
-function handleMenuItemClick(e) {
-    const li = e.target.closest('li');
-    if (!li) return false;
-
-    const siblings = Array.from(menu.querySelectorAll('li'));
-    const index = siblings.indexOf(li);
-
-    if (index >= 0 && index <= 6 && menuFeatures[index]) {
-        e.stopPropagation();
-        const feat = menuFeatures[index];
-        if (window.showLoadingOverlay) {
-            window.showLoadingOverlay(feat.key, feat.name, { iconSvg: feat.iconSvg, subtext: feat.subtext });
+// Add click event listener to the menu to handle clicks on list items
+if (menu) {
+    menu.addEventListener('click', (e) => {
+        const li = e.target.closest('li');
+        if (!li) return;
+        
+        const siblings = Array.from(menu.querySelectorAll('li'));
+        const index = siblings.indexOf(li);
+        
+        if (index >= 0 && menuFeatures[index]) {
+            e.stopPropagation();
+            e.preventDefault();
+            
+            // Set active class on clicked item
+            siblings.forEach(item => item.classList.remove('active'));
+            li.classList.add('active');
+            
+            const feat = menuFeatures[index];
+            if (window.showLoadingOverlay) {
+                window.showLoadingOverlay(feat.key, feat.name, { iconSvg: feat.iconSvg, subtext: feat.subtext });
+            }
         }
-        return true; // handled
-    }
-    return false;
+    });
 }
-
-sidebar.addEventListener('click', (e) => {
-    // First check if a menu item was clicked — handle it and stop
-    if (window.opened && handleMenuItemClick(e)) {
-        return;
-    }
-
-    // Otherwise expand sidebar
-    window.opened = true;
-    sidebar.style.width = '240px';
-    menu.style.fontSize = '1.125rem';
-    user.style.display = 'flex';
-    menu.innerHTML = `
-    <li class="active"><i class="fa-solid fa-gauge"></i> Dashboard</li>
-    <li><i class="fa-solid fa-folder"></i> Phone Files</li>
-    <li><i class="fa-solid fa-location-dot"></i> Location Tracking</li>
-    <li><i class="fa-solid fa-comments"></i> Social Apps</li>
-    <li><i class="fa-solid fa-video"></i> Video Apps</li>
-    <li><i class="fa-solid fa-microphone"></i> Live Recording</li>
-    <li><i class="fa-solid fa-desktop"></i> Remote Control</li>
-    <li><i class="fa-solid fa-file-export"></i> Data Export</li>
-    <li><i class="fa-solid fa-shield-halved"></i> Permissions Check</li>
-    `;
-});
-
-user.style.display = 'none';
-
-content.addEventListener('click', () => {
-    window.opened = false;
-    sidebar.style.width = '72px';
-    menu.style.fontSize = '1.125rem';
-    user.style.display = 'none';
-    menu.innerHTML = `
-    <li class="active"><i class="fa-solid fa-gauge"></i></li>
-    <li><i class="fa-solid fa-folder"></i></li>
-                <li><i class="fa-solid fa-location-dot"></i></li>
-                <li><i class="fa-solid fa-comments"></i></li>
-                <li><i class="fa-solid fa-video"></i></li>
-                <li><i class="fa-solid fa-microphone"></i></li>
-                <li><i class="fa-solid fa-desktop"></i></li>
-                <li><i class="fa-solid fa-file-export"></i></li>
-                <li><i class="fa-solid fa-shield-halved"></i></li>
-            `;
-});
