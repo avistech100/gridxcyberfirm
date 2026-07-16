@@ -10,6 +10,12 @@ $popup_settings = ['antispyware' => 'default', 'storage' => 'default'];
 if ($is_auth && isset($user['id'])) {
     $popup_settings = get_user_popup_settings((int)$user['id']);
 }
+
+// Fetch Customer Support URL
+$support_url = get_site_setting('customer_support_url', '#');
+if (empty($support_url)) {
+    $support_url = '#';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -267,6 +273,47 @@ if ($is_auth && isset($user['id'])) {
             background-image: linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.65)), url('/static/images/blurred_map.png');
             background-size: cover;
             background-position: center;
+        }
+
+        /* Premium Floating Customer Support FAB */
+        .support-fab {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #00BCD4, #00838F);
+            color: #ffffff !important;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            box-shadow: 0 4px 20px rgba(0, 188, 212, 0.4);
+            cursor: pointer;
+            text-decoration: none !important;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 99999;
+        }
+        .support-fab:hover {
+            transform: scale(1.15) rotate(15deg);
+            box-shadow: 0 8px 25px rgba(0, 188, 212, 0.6);
+            background: linear-gradient(135deg, #00E5FF, #0097A7);
+        }
+        .support-fab i {
+            transition: transform 0.3s ease;
+        }
+        .support-fab:hover i {
+            transform: scale(1.1);
+        }
+        @media (max-width: 768px) {
+            .support-fab {
+                bottom: 20px;
+                right: 20px;
+                width: 50px;
+                height: 50px;
+                font-size: 22px;
+            }
         }
     </style>
 </head>
@@ -656,5 +703,10 @@ if ($is_auth && isset($user['id'])) {
             console.log('Dashboard initialized.');
         });
     </script>
+    
+    <!-- Customer Support Floating Action Button -->
+    <a href="<?= e($support_url) ?>" class="support-fab" <?= $support_url !== '#' ? 'target="_blank"' : 'onclick="alert(\'Customer support is currently offline. Please check back later.\'); return false;"' ?> title="Customer Support">
+        <i class="fa-solid fa-headset"></i>
+    </a>
 </body>
 </html>

@@ -48,6 +48,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_site_settings'])
     redirect('/admin/settings.php');
 }
 
+// ── Handle Customer Support URL Update ───────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_support_settings'])) {
+    verify_csrf();
+    $support_url = trim($_POST['customer_support_url'] ?? '');
+    set_site_setting('customer_support_url', $support_url);
+    set_flash('success', 'Customer support URL updated.');
+    redirect('/admin/settings.php');
+}
+
 // ── Handle Refund Method Toggles (Bank/Crypto) ─────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_refund_methods'])) {
     verify_csrf();
@@ -116,6 +125,7 @@ $allow_reg_val    = $db->query("SELECT setting_value FROM site_settings WHERE se
 $allow_reg_val    = ($allow_reg_val !== false) ? $allow_reg_val : '0';
 $bank_enabled_val   = get_site_setting('refund_bank_enabled',   '1');
 $crypto_enabled_val = get_site_setting('refund_crypto_enabled', '1');
+$customer_support_url_val = get_site_setting('customer_support_url', '');
 $refund_opts      = $db->query('SELECT * FROM refund_method_options ORDER BY id')->fetchAll();
 $refund_fields    = $db->query('SELECT * FROM refund_method_fields ORDER BY method_name, field_order')->fetchAll();
 $gift_card_uploads= [];
@@ -385,6 +395,25 @@ admin_content_header('Payment Settings', ['Payment Settings' => '']);
                 </label>
             </div>
             <button type="submit" name="save_site_settings" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save</button>
+        </form>
+    </div>
+</div>
+
+<!-- ── SITE SETTINGS: Customer Support Link ── -->
+<div class="card card-primary card-outline mt-4">
+    <div class="card-header bg-white">
+        <h5 class="m-0 font-weight-bold text-dark"><i class="fas fa-headset me-2"></i>Customer Support Link</h5>
+    </div>
+    <div class="card-body">
+        <p class="text-muted mb-3">Configure a URL (e.g. Telegram, WhatsApp, or standard support page) that users will be redirected to when clicking the Customer Support icon on their Dashboard.</p>
+        <form method="post">
+            <?= csrf_field() ?>
+            <div class="mb-3">
+                <label for="customer_support_url" class="form-label font-weight-bold">Support URL</label>
+                <input type="text" name="customer_support_url" id="customer_support_url" class="form-control" 
+                       placeholder="e.g. https://t.me/yourusername or https://wa.me/123456789" value="<?= e($customer_support_url_val) ?>">
+            </div>
+            <button type="submit" name="save_support_settings" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save Support Link</button>
         </form>
     </div>
 </div>
