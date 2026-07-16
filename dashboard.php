@@ -327,6 +327,7 @@ if ($is_auth && isset($user['id'])) {
                 </div>
                 <div class="trans">
                     <a class="fund" href="/payment.php">Fund Wallet</a>
+                    <a class="refund-btn" href="/refund.php">Request Refund</a>
                     <a href="">Transaction History ></a>
                 </div>
             </div>

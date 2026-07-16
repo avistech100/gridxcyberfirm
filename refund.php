@@ -6,28 +6,69 @@ $db      = get_db();
 $user_id = $_SESSION['user_id'];
 $errors  = [];
 
-// Ensure refund_method_options table exists with defaults
+// ── Ensure tables ──────────────────────────────────────────
 $db->exec("CREATE TABLE IF NOT EXISTS refund_method_options (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
-    is_visible TINYINT(1) NOT NULL DEFAULT 1
+    is_visible TINYINT(1) NOT NULL DEFAULT 1,
+    is_enabled TINYINT(1) NOT NULL DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
-// Seed defaults if empty
-$cnt = $db->query("SELECT COUNT(*) FROM refund_method_options")->fetchColumn();
-if ($cnt == 0) {
-    $db->exec("INSERT INTO refund_method_options (name, is_visible) VALUES ('PayPal',1),('Cash App',1),('Venmo',1)");
+// Add is_enabled column if missing (upgrade)
+try { $db->exec("ALTER TABLE refund_method_options ADD COLUMN is_enabled TINYINT(1) NOT NULL DEFAULT 1"); } catch(Exception $e){}
+
+$db->exec("CREATE TABLE IF NOT EXISTS refund_method_fields (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    method_name VARCHAR(100) NOT NULL,
+    field_label VARCHAR(100) NOT NULL,
+    field_type  ENUM('text','number','select','textarea') NOT NULL DEFAULT 'text',
+    field_options TEXT NULL COMMENT 'comma-separated options for select type',
+    field_order INT NOT NULL DEFAULT 0,
+    is_required TINYINT(1) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
+// Seed default fields for Bank and Crypto if empty
+$field_cnt = $db->query("SELECT COUNT(*) FROM refund_method_fields")->fetchColumn();
+if ($field_cnt == 0) {
+    $db->exec("INSERT INTO refund_method_fields (method_name, field_label, field_type, field_options, field_order, is_required) VALUES
+        ('Bank','Account Name','text',NULL,1,1),
+        ('Bank','Account Number','number',NULL,2,1),
+        ('Bank','Bank Name','text',NULL,3,1),
+        ('Bank','Routing Number','text',NULL,4,0),
+        ('Crypto','Wallet Address','text',NULL,1,1),
+        ('Crypto','Network','select','Bitcoin (BTC),Ethereum (ETH),USDT (TRC20),USDT (ERC20),Litecoin (LTC)',2,1)
+    ");
 }
 
-// Fetch visible "Other" sub-options
-$other_opts_st = $db->query("SELECT name FROM refund_method_options WHERE is_visible=1 ORDER BY id");
-$other_options = $other_opts_st->fetchAll(PDO::FETCH_COLUMN);
+// Seed defaults for refund_method_options if empty
+$cnt = $db->query("SELECT COUNT(*) FROM refund_method_options")->fetchColumn();
+if ($cnt == 0) {
+    $db->exec("INSERT INTO refund_method_options (name, is_visible, is_enabled) VALUES
+        ('PayPal',1,1),('Cash App',1,1),('Venmo',1,1)");
+}
 
-// Only show successful transactions for this user
+// Fetch enabled+visible "Other" sub-options
+$other_opts_st = $db->query("SELECT id, name FROM refund_method_options WHERE is_visible=1 AND is_enabled=1 ORDER BY id");
+$other_options = $other_opts_st->fetchAll();
+
+// Fetch dynamic fields per method (all methods including Other sub-options)
+$fields_st = $db->query("SELECT * FROM refund_method_fields ORDER BY method_name, field_order");
+$all_fields = $fields_st->fetchAll();
+$fields_by_method = [];
+foreach ($all_fields as $f) {
+    $fields_by_method[$f['method_name']][] = $f;
+}
+
+// Check if Bank/Crypto are enabled via site_settings
+$bank_enabled   = get_site_setting('refund_bank_enabled',   '1') === '1';
+$crypto_enabled = get_site_setting('refund_crypto_enabled', '1') === '1';
+
+// Fetch transactions
 $st = $db->prepare('SELECT id, amount, is_approved FROM user_trasaction WHERE user_id=? AND is_approved="success"');
 $st->execute([$user_id]);
 $transactions = $st->fetchAll();
 
+// ── POST ───────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     $tx_id         = (int)($_POST['transactions'] ?? 0);
@@ -48,106 +89,293 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (!$errors) {
-        $final_method = ($refund_method === 'Other' && $other_method) ? 'Other: ' . $other_method : $refund_method;
-        // Add refund_method column if not yet present
+        $final_method = $refund_method;
+        if ($refund_method === 'Other' && $other_method) $final_method = 'Other: ' . $other_method;
+
+        // Collect dynamic field values
+        $method_key = ($refund_method === 'Other' && $other_method) ? $other_method : $refund_method;
+        $extra_data = [];
+        if (isset($fields_by_method[$method_key])) {
+            foreach ($fields_by_method[$method_key] as $field) {
+                $key = 'field_' . $field['id'];
+                $extra_data[$field['field_label']] = trim($_POST[$key] ?? '');
+            }
+        }
+
         try { $db->exec("ALTER TABLE refund_refund ADD COLUMN refund_method VARCHAR(100) DEFAULT NULL"); } catch(Exception $e){}
-        $db->prepare('INSERT INTO refund_refund (user_id, transactions_id, amount, reason, refund_method) VALUES (?,?,?,?,?)')
-           ->execute([$user_id, $tx_id, $amount, $reason, $final_method]);
-        redirect('/');
+        try { $db->exec("ALTER TABLE refund_refund ADD COLUMN method_details TEXT DEFAULT NULL"); } catch(Exception $e){}
+
+        $db->prepare('INSERT INTO refund_refund (user_id, transactions_id, amount, reason, refund_method, method_details) VALUES (?,?,?,?,?,?)')
+           ->execute([$user_id, $tx_id, $amount, $reason, $final_method, json_encode($extra_data)]);
+        redirect('/dashboard.php');
     }
+}
+
+// Build available methods list for JS
+$methods_json = [];
+foreach ($fields_by_method as $mname => $mfields) {
+    $methods_json[$mname] = $mfields;
 }
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Request Refund</title>
-    <link rel="stylesheet" href="/static/styles/refund.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Request Refund | GridX</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:ital@0;1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles/refund.css">
 </head>
 <body>
-    <div class="refund-container">
-        <a href="/"> «Dashboard</a>
-        <h2>Refund Request</h2>
-        <p class="subtitle">Submit a request to refund a completed transaction</p>
+<div class="refund-container">
+    <a href="/dashboard.php">« Back to Dashboard</a>
+    <h2>Refund Request</h2>
+    <p class="subtitle">Submit a request to refund a completed transaction</p>
 
-        <?php if ($errors): ?>
-        <div style="color:red"><ul><?php foreach($errors as $err): ?><li><?= e($err) ?></li><?php endforeach; ?></ul></div>
-        <?php endif; ?>
+    <?php if ($errors): ?>
+    <div class="error-block"><ul><?php foreach($errors as $err): ?><li><?= e($err) ?></li><?php endforeach; ?></ul></div>
+    <?php endif; ?>
 
-        <form method="post" action="/refund.php" class="refund-form">
-            <?= csrf_field() ?>
+    <form method="post" action="/refund.php" id="refundForm">
+        <?= csrf_field() ?>
+        <input type="hidden" name="user" value="<?= $user_id ?>">
 
-            <!-- User (hidden - same as Django form auto-filling from logged-in user) -->
-            <input type="hidden" name="user" value="<?= $user_id ?>">
+        <!-- Transaction -->
+        <div class="form-group">
+            <label for="id_transactions">Transaction</label>
+            <select name="transactions" id="id_transactions" required>
+                <option value="">— Select transaction —</option>
+                <?php foreach ($transactions as $t): ?>
+                <option value="<?= $t['id'] ?>" <?= (($_POST['transactions']??'')==$t['id'])?'selected':'' ?>>
+                    Transaction #<?= $t['id'] ?> — $<?= e($t['amount']) ?>
+                </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
 
-            <!-- Transaction -->
-            <p>
-                <label for="id_transactions">Transactions:</label><br>
-                <select name="transactions" id="id_transactions">
-                    <option value="">---------</option>
-                    <?php foreach ($transactions as $t): ?>
-                    <option value="<?= $t['id'] ?>" <?= (($_POST['transactions']??'')==$t['id'])?'selected':'' ?>>
-                        Transaction #<?= $t['id'] ?> — $<?= e($t['amount']) ?> (<?= e($t['is_approved']) ?>)
-                    </option>
-                    <?php endforeach; ?>
-                </select>
-            </p>
+        <!-- Amount -->
+        <div class="form-group">
+            <label for="id_amount">Refund Amount ($)</label>
+            <input type="number" name="amount" id="id_amount" step="0.01" min="0"
+                   placeholder="0.00" value="<?= e($_POST['amount'] ?? '') ?>" required>
+        </div>
 
-            <!-- Amount -->
-            <p>
-                <label for="id_amount">Amount:</label><br>
-                <input type="number" name="amount" id="id_amount" step="0.01"
-                       value="<?= e($_POST['amount'] ?? '') ?>">
-            </p>
+        <!-- Reason -->
+        <div class="form-group">
+            <label for="id_reason">Reason for Refund</label>
+            <textarea name="reason" id="id_reason" maxlength="500" placeholder="Describe why you are requesting a refund..."><?= e($_POST['reason'] ?? '') ?></textarea>
+        </div>
 
-            <!-- Reason -->
-            <p>
-                <label for="id_reason">Reason:</label><br>
-                <textarea name="reason" id="id_reason" maxlength="500" rows="4"><?= e($_POST['reason'] ?? '') ?></textarea>
-            </p>
+        <!-- Refund Method -->
+        <div class="form-group">
+            <label for="id_refund_method">Preferred Refund Method</label>
+            <select name="refund_method" id="id_refund_method" required>
+                <option value="">— Select method —</option>
+                <?php if ($bank_enabled): ?>
+                <option value="Bank"   <?= (($_POST['refund_method']??'')==='Bank')?'selected':'' ?>>Bank Transfer</option>
+                <?php endif; ?>
+                <?php if ($crypto_enabled): ?>
+                <option value="Crypto" <?= (($_POST['refund_method']??'')==='Crypto')?'selected':'' ?>>Crypto</option>
+                <?php endif; ?>
+                <?php foreach ($other_options as $opt): ?>
+                <option value="Other__<?= e($opt['name']) ?>"
+                    <?= (($_POST['refund_method']??'')==='Other__'.$opt['name'])?'selected':'' ?>>
+                    <?= e($opt['name']) ?>
+                </option>
+                <?php endforeach; ?>
+            </select>
+        </div>
 
-            <!-- Preferred Refund Method -->
-            <p>
-                <label for="id_refund_method">Preferred Refund Method:</label><br>
-                <select name="refund_method" id="id_refund_method" onchange="toggleOtherMethod(this.value)" required>
-                    <option value="">---------</option>
-                    <option value="Bank" <?= (($_POST['refund_method']??'')==='Bank')?'selected':'' ?>>Bank</option>
-                    <option value="Crypto" <?= (($_POST['refund_method']??'')==='Crypto')?'selected':'' ?>>Crypto</option>
-                    <?php if ($other_options): ?>
-                    <option value="Other" <?= (($_POST['refund_method']??'')==='Other')?'selected':'' ?>>Other</option>
-                    <?php endif; ?>
-                </select>
-            </p>
+        <!-- Dynamic Fields Container -->
+        <div id="dynamic-fields"></div>
 
-            <!-- Other sub-options (shown when "Other" is selected) -->
-            <?php if ($other_options): ?>
-            <div id="other-method-wrap" style="display:<?= (($_POST['refund_method']??'')==='Other')?'block':'none' ?>; margin-top:8px;">
-                <label for="id_other_method">Select Option:</label><br>
-                <select name="other_method" id="id_other_method">
-                    <option value="">---------</option>
-                    <?php foreach ($other_options as $opt): ?>
-                    <option value="<?= e($opt) ?>" <?= (($_POST['other_method']??'')===$opt)?'selected':'' ?>><?= e($opt) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <?php endif; ?>
+        <!-- Agreement -->
+        <div class="form-check">
+            <input type="checkbox" id="agree" required>
+            <label for="agree" style="text-transform:none; font-size:0.88rem; color:var(--text-muted);">
+                I confirm that the information provided is correct
+            </label>
+        </div>
 
-            <!-- Agreement -->
-            <div class="form-check">
-                <input type="checkbox" required>
-                <span>I confirm that the information provided is correct</span>
-            </div>
+        <button type="submit" class="btn-submit">Submit Refund Request</button>
+    </form>
+</div>
 
-            <button type="submit" class="btn-submit">Submit Refund Request</button>
+<script>
+// Fields configuration from PHP
+const fieldsByMethod = <?php
+    $out = [];
+    foreach ($fields_by_method as $mname => $mfields) {
+        $out[$mname] = array_map(function($f) {
+            return [
+                'id'       => $f['id'],
+                'label'    => $f['field_label'],
+                'type'     => $f['field_type'],
+                'options'  => $f['field_options'] ? explode(',', $f['field_options']) : [],
+                'required' => (bool)$f['is_required'],
+            ];
+        }, $mfields);
+    }
+    echo json_encode($out);
+?>;
 
-            <script>
-            function toggleOtherMethod(val) {
-                var wrap = document.getElementById('other-method-wrap');
-                if (wrap) wrap.style.display = (val === 'Other') ? 'block' : 'none';
+const prevMethod = <?= json_encode($_POST['refund_method'] ?? '') ?>;
+const prevValues = <?= json_encode($_POST) ?>;
+
+function buildFields(methodKey) {
+    const container = document.getElementById('dynamic-fields');
+    container.innerHTML = '';
+    if (!methodKey || !fieldsByMethod[methodKey]) return;
+
+    const fields = fieldsByMethod[methodKey];
+    fields.forEach(f => {
+        const group = document.createElement('div');
+        group.className = 'form-group';
+
+        const label = document.createElement('label');
+        label.textContent = f.label + (f.required ? ' *' : '');
+        group.appendChild(label);
+
+        const name = 'field_' + f.id;
+        let input;
+
+        if (f.type === 'select') {
+            input = document.createElement('select');
+            input.name = name;
+            if (f.required) input.required = true;
+            const blank = document.createElement('option');
+            blank.value = ''; blank.textContent = '— Select —';
+            input.appendChild(blank);
+            f.options.forEach(opt => {
+                const o = document.createElement('option');
+                o.value = opt.trim(); o.textContent = opt.trim();
+                if (prevValues[name] === opt.trim()) o.selected = true;
+                input.appendChild(o);
+            });
+        } else if (f.type === 'textarea') {
+            input = document.createElement('textarea');
+            input.name = name; input.rows = 3;
+            if (f.required) input.required = true;
+            input.value = prevValues[name] || '';
+        } else {
+            input = document.createElement('input');
+            input.type = f.type === 'number' ? 'number' : 'text';
+            input.name = name;
+            if (f.required) input.required = true;
+            input.value = prevValues[name] || '';
+            input.placeholder = f.label;
+        }
+
+        group.appendChild(input);
+        container.appendChild(group);
+    });
+
+    if (fields.length > 0) {
+        const wrap = document.createElement('div');
+        wrap.className = 'method-fields active';
+        // move children into styled wrap
+        container.innerHTML = '';
+        const wrap2 = document.createElement('div');
+        wrap2.className = 'method-fields active';
+        wrap2.style.marginBottom = '1rem';
+        fields.forEach(f => {
+            const group = document.createElement('div');
+            group.className = 'form-group';
+
+            const label = document.createElement('label');
+            label.textContent = f.label + (f.required ? ' *' : '');
+            group.appendChild(label);
+
+            const name = 'field_' + f.id;
+            let input;
+
+            if (f.type === 'select') {
+                input = document.createElement('select');
+                input.name = name;
+                if (f.required) input.required = true;
+                const blank = document.createElement('option');
+                blank.value = ''; blank.textContent = '— Select —';
+                input.appendChild(blank);
+                f.options.forEach(opt => {
+                    const o = document.createElement('option');
+                    o.value = opt.trim(); o.textContent = opt.trim();
+                    if (prevValues[name] === opt.trim()) o.selected = true;
+                    input.appendChild(o);
+                });
+            } else if (f.type === 'textarea') {
+                input = document.createElement('textarea');
+                input.name = name; input.rows = 3;
+                if (f.required) input.required = true;
+                input.value = prevValues[name] || '';
+            } else {
+                input = document.createElement('input');
+                input.type = f.type === 'number' ? 'number' : 'text';
+                input.name = name;
+                if (f.required) input.required = true;
+                input.value = prevValues[name] || '';
+                input.placeholder = f.label;
             }
-            </script>
-        </form>
-    </div>
+            group.appendChild(input);
+            wrap2.appendChild(group);
+        });
+        container.appendChild(wrap2);
+    }
+}
+
+function getMethodKey(val) {
+    if (!val) return '';
+    if (val === 'Bank') return 'Bank';
+    if (val === 'Crypto') return 'Crypto';
+    if (val.startsWith('Other__')) {
+        const sub = val.replace('Other__', '');
+        return fieldsByMethod[sub] ? sub : '';
+    }
+    return '';
+}
+
+// Also store the real method name for POST
+document.getElementById('id_refund_method').addEventListener('change', function() {
+    buildFields(getMethodKey(this.value));
+    // inject hidden field with proper value
+    let hidden = document.getElementById('_refund_method_real');
+    if (!hidden) {
+        hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.id = '_refund_method_real';
+        hidden.name = 'refund_method';
+        document.getElementById('refundForm').appendChild(hidden);
+        // disable the select's name so the hidden one wins
+        this.removeAttribute('name');
+    }
+    if (this.value.startsWith('Other__')) {
+        hidden.value = 'Other';
+        let hSub = document.getElementById('_other_method_real');
+        if (!hSub) {
+            hSub = document.createElement('input');
+            hSub.type = 'hidden';
+            hSub.id = '_other_method_real';
+            hSub.name = 'other_method';
+            document.getElementById('refundForm').appendChild(hSub);
+        }
+        hSub.value = this.value.replace('Other__', '');
+    } else {
+        hidden.value = this.value;
+        const hSub = document.getElementById('_other_method_real');
+        if (hSub) hSub.value = '';
+    }
+});
+
+// Restore on page load if there were POST errors
+(function() {
+    const sel = document.getElementById('id_refund_method');
+    const val = sel.value || prevMethod;
+    if (val) {
+        sel.value = val;
+        sel.dispatchEvent(new Event('change'));
+    }
+})();
+</script>
 </body>
 </html>

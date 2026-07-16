@@ -206,6 +206,13 @@ a{
   color: whitesmoke;
 }
 
+.refund-btn {
+  padding: .5rem 1rem;
+  background-color: #e53935;
+  color: whitesmoke;
+  border-radius: 5px;
+}
+
 /* Cards */
 .cards {
   display: grid;
@@ -535,7 +542,7 @@ p {
         align-items: flex-start;
         gap: 8px;
     }
-    .fund {
+    .fund, .refund-btn {
         width: 100%;
         text-align: center;
         display: block;

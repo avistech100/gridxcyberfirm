@@ -1,93 +1,199 @@
-* {
+/* ============================================================
+   GridX — Refund Page (matches login/signup glassy theme)
+   ============================================================ */
+
+:root {
+    --accent: #1e2f6f;
+    --accent-light: #2d44a0;
+    --danger: #e53935;
+    --text-dark: #1a1a2e;
+    --text-muted: #555;
+    --glass-bg: rgba(255, 255, 255, 0.75);
+    --glass-border: rgba(255, 255, 255, 0.6);
+    --input-border: #c8d0e7;
+    --shadow: 0 8px 32px rgba(30, 47, 111, 0.18);
+}
+
+*, *::before, *::after {
     box-sizing: border-box;
-    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
 }
 
 body {
-    background: #f4f6f8;
-    padding: 40px;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2.5rem 1rem;
+    font-family: 'Rubik', 'Segoe UI', Arial, sans-serif;
+    color: var(--text-dark);
+    background:
+        radial-gradient(ellipse at 20% 20%, rgba(30, 47, 111, 0.25) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 80%, rgba(100, 130, 255, 0.15) 0%, transparent 55%),
+        linear-gradient(135deg, #e8ecf8 0%, #f5f7ff 50%, #eef1fb 100%);
+    background-attachment: fixed;
 }
 
 .refund-container {
-    max-width: 500px;
-    margin: auto;
-    background: #fff;
-    padding: 30px;
-    border-radius: 8px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-radius: 20px;
+    padding: 2.5rem 2.5rem 2rem;
+    width: 100%;
+    max-width: 540px;
+    box-shadow: var(--shadow), 0 1px 0 rgba(255,255,255,0.9) inset;
 }
 
+/* Back link */
+.refund-container > a:first-child {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.85rem;
+    color: var(--accent);
+    text-decoration: none;
+    margin-bottom: 1.4rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    transition: color 0.2s;
+}
+.refund-container > a:first-child:hover { color: var(--accent-light); }
+
 h2 {
-    margin-bottom: 5px;
+    font-size: 1.55rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-align: center;
+    margin-bottom: 0.4rem;
+    letter-spacing: -0.01em;
 }
 
 .subtitle {
-    color: #666;
-    font-size: 14px;
-    margin-bottom: 25px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+    margin-bottom: 1.6rem;
 }
 
+/* Error block */
+.error-block {
+    background: rgba(229, 57, 53, 0.08);
+    border: 1px solid rgba(229, 57, 53, 0.35);
+    color: var(--danger);
+    padding: 0.7rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 0.88rem;
+}
+.error-block ul { padding-left: 1.2rem; }
+
+/* Form groups */
 .form-group {
-    margin-bottom: 18px;
+    margin-bottom: 1.1rem;
 }
 
 label {
     display: block;
+    font-size: 0.82rem;
     font-weight: 600;
-    margin-bottom: 6px;
+    color: var(--text-muted);
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    margin-bottom: 5px;
 }
 
-input, select, textarea {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 14px;
-}
-
-input[type='checkbox']{
-    width: 10%;
-    /* appearance: none; */
-}
-
+input[type="text"],
+input[type="number"],
+input[type="email"],
+select,
 textarea {
-    resize: vertical;
+    width: 100%;
+    padding: 0.65rem 0.9rem;
+    font-size: 0.97rem;
+    font-family: inherit;
+    color: var(--text-dark);
+    background: rgba(255,255,255,0.85);
+    border: 1.5px solid var(--input-border);
+    border-radius: 10px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+input[type="text"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(30, 47, 111, 0.12);
+    background: #fff;
 }
 
-small {
-    color: #777;
-    font-size: 12px;
-}
+textarea { resize: vertical; min-height: 100px; }
 
+/* Dynamic method fields */
+.method-fields {
+    background: rgba(30, 47, 111, 0.04);
+    border: 1px solid rgba(30, 47, 111, 0.1);
+    border-radius: 12px;
+    padding: 1rem 1.1rem;
+    margin-top: 0.6rem;
+    display: none;
+}
+.method-fields.active { display: block; }
+.method-fields .form-group:last-child { margin-bottom: 0; }
+
+/* Agreement */
 .form-check {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 20px;
-    font-size: 14px;
+    gap: 10px;
+    margin: 1.2rem 0 1.4rem;
+    font-size: 0.88rem;
+    color: var(--text-muted);
 }
-
-.btn-submit {
-    width: 100%;
-    padding: 12px;
-    background: #2563eb;
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    font-size: 16px;
+.form-check input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    border-radius: 4px;
     cursor: pointer;
+    accent-color: var(--accent);
 }
 
+/* Submit button */
+.btn-submit {
+    display: block;
+    width: 100%;
+    padding: 0.8rem 1rem;
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: inherit;
+    letter-spacing: 0.03em;
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(30, 47, 111, 0.3);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
 .btn-submit:hover {
-    background: #1e4fd8;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(30, 47, 111, 0.4);
+}
+.btn-submit:active { transform: translateY(0); }
+
+/* Responsive */
+@media (max-width: 600px) {
+    body { padding: 1.5rem 0.75rem; }
+    .refund-container {
+        padding: 2rem 1.4rem 1.6rem;
+        border-radius: 16px;
+    }
+    h2 { font-size: 1.3rem; }
 }
 
-
-@media only screen and (max-width: 600px) {
-    body{
-        display: block;
-    }
-    .refund-container{
-        max-width: 90%;
-    }
+@media (max-width: 380px) {
+    .refund-container { padding: 1.6rem 1rem 1.4rem; }
 }

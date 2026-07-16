@@ -8,14 +8,35 @@ $db = get_db();
 $errors = [];
 $success = false;
 
-// Ensure tables exist
+// ── Ensure tables ──────────────────────────────────────────
 $db->exec("CREATE TABLE IF NOT EXISTS site_settings (setting_key VARCHAR(100) PRIMARY KEY, setting_value TEXT NOT NULL DEFAULT '') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
-$db->exec("CREATE TABLE IF NOT EXISTS refund_method_options (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100) NOT NULL, is_visible TINYINT(1) NOT NULL DEFAULT 1) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+$db->exec("CREATE TABLE IF NOT EXISTS refund_method_options (id INT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100) NOT NULL, is_visible TINYINT(1) NOT NULL DEFAULT 1, is_enabled TINYINT(1) NOT NULL DEFAULT 1) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+try { $db->exec("ALTER TABLE refund_method_options ADD COLUMN is_enabled TINYINT(1) NOT NULL DEFAULT 1"); } catch(Exception $e){}
 $cnt = $db->query("SELECT COUNT(*) FROM refund_method_options")->fetchColumn();
 if ($cnt == 0) {
-    $db->exec("INSERT INTO refund_method_options (name, is_visible) VALUES ('PayPal',1),('Cash App',1),('Venmo',1)");
+    $db->exec("INSERT INTO refund_method_options (name, is_visible, is_enabled) VALUES ('PayPal',1,1),('Cash App',1,1),('Venmo',1,1)");
 }
 $db->exec("CREATE TABLE IF NOT EXISTS gift_card_uploads (id INT AUTO_INCREMENT PRIMARY KEY, transaction_id INT NOT NULL, user_id INT NOT NULL, image_path VARCHAR(255) NOT NULL, uploaded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+$db->exec("CREATE TABLE IF NOT EXISTS refund_method_fields (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    method_name VARCHAR(100) NOT NULL,
+    field_label VARCHAR(100) NOT NULL,
+    field_type  ENUM('text','number','select','textarea') NOT NULL DEFAULT 'text',
+    field_options TEXT NULL,
+    field_order INT NOT NULL DEFAULT 0,
+    is_required TINYINT(1) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+$field_cnt = $db->query("SELECT COUNT(*) FROM refund_method_fields")->fetchColumn();
+if ($field_cnt == 0) {
+    $db->exec("INSERT INTO refund_method_fields (method_name, field_label, field_type, field_options, field_order, is_required) VALUES
+        ('Bank','Account Name','text',NULL,1,1),
+        ('Bank','Account Number','number',NULL,2,1),
+        ('Bank','Bank Name','text',NULL,3,1),
+        ('Bank','Routing Number','text',NULL,4,0),
+        ('Crypto','Wallet Address','text',NULL,1,1),
+        ('Crypto','Network','select','Bitcoin (BTC),Ethereum (ETH),USDT (TRC20),USDT (ERC20),Litecoin (LTC)',2,1)
+    ");
+}
 
 // ── Handle Self-Registration Toggle ────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_site_settings'])) {
@@ -27,34 +48,83 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_site_settings'])
     redirect('/admin/settings.php');
 }
 
-// ── Handle Refund Options ───────────────────────────────────
+// ── Handle Refund Method Toggles (Bank/Crypto) ─────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_refund_methods'])) {
+    verify_csrf();
+    $bank_en   = isset($_POST['refund_bank_enabled'])   ? '1' : '0';
+    $crypto_en = isset($_POST['refund_crypto_enabled']) ? '1' : '0';
+    set_site_setting('refund_bank_enabled',   $bank_en);
+    set_site_setting('refund_crypto_enabled', $crypto_en);
+    set_flash('success', 'Refund method settings saved.');
+    redirect('/admin/settings.php');
+}
+
+// ── Handle DELETE of "Other" option (separate form, GET-style via POST) ──
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_refund_option_id'])) {
+    verify_csrf();
+    $del_id = (int)$_POST['delete_refund_option_id'];
+    if ($del_id) {
+        $db->prepare('DELETE FROM refund_method_options WHERE id=?')->execute([$del_id]);
+        set_flash('success', 'Refund option deleted.');
+    }
+    redirect('/admin/settings.php');
+}
+
+// ── Handle Save of "Other" options (visibility + new add) ──
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_refund_options'])) {
     verify_csrf();
-    // Add new option
     $new_opt = trim($_POST['new_refund_option'] ?? '');
     if ($new_opt !== '') {
-        $db->prepare('INSERT INTO refund_method_options (name, is_visible) VALUES (?,1)')->execute([$new_opt]);
+        $db->prepare('INSERT INTO refund_method_options (name, is_visible, is_enabled) VALUES (?,1,1)')->execute([$new_opt]);
     }
-    // Update visibility
-    $all_ids = $db->query('SELECT id FROM refund_method_options')->fetchAll(PDO::FETCH_COLUMN);
-    foreach ($all_ids as $oid) {
+    $all = $db->query('SELECT id FROM refund_method_options')->fetchAll(PDO::FETCH_COLUMN);
+    foreach ($all as $oid) {
         $visible = isset($_POST['visible_' . $oid]) ? 1 : 0;
         $db->prepare('UPDATE refund_method_options SET is_visible=? WHERE id=?')->execute([$visible, $oid]);
     }
-    // Delete
-    $del_id = (int)($_POST['delete_refund_option'] ?? 0);
-    if ($del_id) $db->prepare('DELETE FROM refund_method_options WHERE id=?')->execute([$del_id]);
     set_flash('success', 'Refund options saved.');
     redirect('/admin/settings.php');
 }
 
+// ── Handle Refund Field Builder ─────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_refund_field'])) {
+    verify_csrf();
+    $method     = trim($_POST['field_method'] ?? '');
+    $flabel     = trim($_POST['field_label'] ?? '');
+    $ftype      = in_array($_POST['field_type']??'',['text','number','select','textarea']) ? $_POST['field_type'] : 'text';
+    $foptions   = trim($_POST['field_options'] ?? '');
+    $forder     = (int)($_POST['field_order'] ?? 0);
+    $frequired  = isset($_POST['field_required']) ? 1 : 0;
+    if ($method && $flabel) {
+        $db->prepare('INSERT INTO refund_method_fields (method_name, field_label, field_type, field_options, field_order, is_required) VALUES (?,?,?,?,?,?)')
+           ->execute([$method, $flabel, $ftype, $foptions ?: null, $forder, $frequired]);
+        set_flash('success', 'Field added.');
+    }
+    redirect('/admin/settings.php');
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_refund_field_id'])) {
+    verify_csrf();
+    $fid = (int)$_POST['delete_refund_field_id'];
+    if ($fid) $db->prepare('DELETE FROM refund_method_fields WHERE id=?')->execute([$fid]);
+    set_flash('success', 'Field deleted.');
+    redirect('/admin/settings.php');
+}
+
+// ── Fetch data ─────────────────────────────────────────────
 $allow_reg_val    = $db->query("SELECT setting_value FROM site_settings WHERE setting_key='allow_self_registration'")->fetchColumn();
 $allow_reg_val    = ($allow_reg_val !== false) ? $allow_reg_val : '0';
+$bank_enabled_val   = get_site_setting('refund_bank_enabled',   '1');
+$crypto_enabled_val = get_site_setting('refund_crypto_enabled', '1');
 $refund_opts      = $db->query('SELECT * FROM refund_method_options ORDER BY id')->fetchAll();
-$gift_card_uploads= $db->query('SELECT g.*, u.username, t.amount FROM gift_card_uploads g
-    JOIN user_gridxuser u ON g.user_id=u.id
-    JOIN user_trasaction t ON g.transaction_id=t.id
-    ORDER BY g.uploaded_at DESC LIMIT 50')->fetchAll();
+$refund_fields    = $db->query('SELECT * FROM refund_method_fields ORDER BY method_name, field_order')->fetchAll();
+$gift_card_uploads= [];
+try {
+    $gift_card_uploads = $db->query('SELECT g.*, u.username, t.amount FROM gift_card_uploads g
+        JOIN user_gridxuser u ON g.user_id=u.id
+        JOIN user_trasaction t ON g.transaction_id=t.id
+        ORDER BY g.uploaded_at DESC LIMIT 50')->fetchAll();
+} catch(Exception $e){}
 
 // Define default values
 $defaults = [
@@ -311,7 +381,7 @@ admin_content_header('Payment Settings', ['Payment Settings' => '']);
                        <?= $allow_reg_val === '1' ? 'checked' : '' ?> style="width:2.5rem; height:1.3rem;">
                 <label class="form-check-label ms-2" for="allow_self_reg">
                     <strong>Allow Self-Registration</strong>
-                    <small class="d-block text-muted">When ON, the sign-up page is accessible to visitors. When OFF (default), it is hidden.</small>
+                    <small class="d-block text-muted">When ON, the sign-up page is accessible to visitors.</small>
                 </label>
             </div>
             <button type="submit" name="save_site_settings" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save</button>
@@ -319,17 +389,43 @@ admin_content_header('Payment Settings', ['Payment Settings' => '']);
     </div>
 </div>
 
-<!-- ── REFUND METHOD OPTIONS ── -->
+<!-- ── REFUND: Bank & Crypto Enable/Disable ── -->
 <div class="card card-primary card-outline mt-4">
     <div class="card-header bg-white">
-        <h5 class="m-0 font-weight-bold text-dark"><i class="fas fa-exchange-alt me-2"></i>Refund Method Options (under "Other")</h5>
+        <h5 class="m-0 font-weight-bold text-dark"><i class="fas fa-toggle-on me-2"></i>Refund Payment Methods (Bank & Crypto)</h5>
     </div>
     <div class="card-body">
-        <p class="text-muted mb-3">Bank and Crypto are always visible. Manage additional options that appear when a user selects "Other" on the refund page.</p>
+        <p class="text-muted mb-3">Enable or disable the Bank and Crypto options on the user-facing refund page.</p>
         <form method="post">
             <?= csrf_field() ?>
-            <table class="table table-sm table-bordered mb-3">
-                <thead><tr><th>Option Name</th><th style="width:100px;">Visible</th><th style="width:80px;">Delete</th></tr></thead>
+            <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" name="refund_bank_enabled" id="refund_bank_en"
+                       <?= $bank_enabled_val === '1' ? 'checked' : '' ?> style="width:2.5rem; height:1.3rem;">
+                <label class="form-check-label ms-2" for="refund_bank_en"><strong>Bank Transfer</strong></label>
+            </div>
+            <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" name="refund_crypto_enabled" id="refund_crypto_en"
+                       <?= $crypto_enabled_val === '1' ? 'checked' : '' ?> style="width:2.5rem; height:1.3rem;">
+                <label class="form-check-label ms-2" for="refund_crypto_en"><strong>Crypto</strong></label>
+            </div>
+            <button type="submit" name="save_refund_methods" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save</button>
+        </form>
+    </div>
+</div>
+
+<!-- ── REFUND: "Other" Method Options ── -->
+<div class="card card-primary card-outline mt-4">
+    <div class="card-header bg-white">
+        <h5 class="m-0 font-weight-bold text-dark"><i class="fas fa-list me-2"></i>Refund "Other" Method Options</h5>
+    </div>
+    <div class="card-body">
+        <p class="text-muted mb-3">These appear as selectable options for users who choose a payment method other than Bank or Crypto.</p>
+
+        <!-- Save visibility form -->
+        <form method="post" class="mb-3">
+            <?= csrf_field() ?>
+            <table class="table table-sm table-bordered">
+                <thead><tr><th>Name</th><th style="width:80px;" class="text-center">Visible</th><th style="width:80px;" class="text-center">Delete</th></tr></thead>
                 <tbody>
                 <?php foreach ($refund_opts as $opt): ?>
                 <tr>
@@ -338,23 +434,122 @@ admin_content_header('Payment Settings', ['Payment Settings' => '']);
                         <input type="checkbox" name="visible_<?= $opt['id'] ?>" <?= $opt['is_visible'] ? 'checked' : '' ?>>
                     </td>
                     <td class="text-center">
-                        <button type="submit" name="delete_refund_option" value="<?= $opt['id'] ?>"
-                                class="btn btn-xs btn-danger btn-sm"
-                                onclick="return confirm('Delete this option?')">✕</button>
+                        <!-- Separate form per delete so it doesn't interfere with visibility save -->
+                        <form method="post" style="display:inline;" onsubmit="return confirm('Delete \'<?= e(addslashes($opt['name'])) ?>\'?');">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="delete_refund_option_id" value="<?= $opt['id'] ?>">
+                            <button type="submit" class="btn btn-danger btn-sm py-0 px-2">✕</button>
+                        </form>
                     </td>
                 </tr>
                 <?php endforeach; ?>
                 <?php if (!$refund_opts): ?>
-                <tr><td colspan="3" class="text-muted text-center">No options yet.</td></tr>
+                <tr><td colspan="3" class="text-muted text-center">No options added yet.</td></tr>
                 <?php endif; ?>
                 </tbody>
             </table>
-            <div class="d-flex gap-2 align-items-center mb-3">
-                <input type="text" name="new_refund_option" class="form-control" style="max-width:260px;" placeholder="Add new option (e.g. Zelle)">
-                <button type="submit" name="save_refund_options" class="btn btn-success btn-sm"><i class="fas fa-plus me-1"></i>Add &amp; Save</button>
-            </div>
-            <button type="submit" name="save_refund_options" class="btn btn-primary btn-sm"><i class="fas fa-save me-1"></i>Save Visibility Changes</button>
+            <button type="submit" name="save_refund_options" class="btn btn-primary btn-sm"><i class="fas fa-save me-1"></i>Save Visibility</button>
         </form>
+
+        <!-- Add new option form -->
+        <form method="post" class="d-flex gap-2 align-items-center">
+            <?= csrf_field() ?>
+            <input type="text" name="new_refund_option" class="form-control form-control-sm" style="max-width:240px;" placeholder="New option name (e.g. Zelle)">
+            <button type="submit" name="save_refund_options" class="btn btn-success btn-sm"><i class="fas fa-plus me-1"></i>Add</button>
+        </form>
+    </div>
+</div>
+
+<!-- ── REFUND: Custom Field Builder ── -->
+<div class="card card-primary card-outline mt-4">
+    <div class="card-header bg-white">
+        <h5 class="m-0 font-weight-bold text-dark"><i class="fas fa-tools me-2"></i>Refund Form Fields Builder</h5>
+    </div>
+    <div class="card-body">
+        <p class="text-muted mb-3">
+            Define the input fields that appear when a user selects each refund method.
+            Use <strong>Bank</strong>, <strong>Crypto</strong>, or any "Other" option name (e.g. <em>PayPal</em>) as the Method Name.
+        </p>
+
+        <!-- Existing fields -->
+        <?php
+        $fields_by_method = [];
+        foreach ($refund_fields as $f) { $fields_by_method[$f['method_name']][] = $f; }
+        foreach ($fields_by_method as $mname => $mfields): ?>
+        <div class="mb-3">
+            <h6 class="fw-bold text-dark border-bottom pb-1 mb-2"><?= e($mname) ?></h6>
+            <table class="table table-sm table-bordered">
+                <thead><tr><th>#</th><th>Label</th><th>Type</th><th>Options</th><th>Req</th><th style="width:70px;">Del</th></tr></thead>
+                <tbody>
+                <?php foreach ($mfields as $f): ?>
+                <tr>
+                    <td><?= $f['field_order'] ?></td>
+                    <td><?= e($f['field_label']) ?></td>
+                    <td><?= e($f['field_type']) ?></td>
+                    <td><small><?= e($f['field_options'] ?? '—') ?></small></td>
+                    <td><?= $f['is_required'] ? '✔' : '' ?></td>
+                    <td>
+                        <form method="post" style="display:inline;" onsubmit="return confirm('Delete this field?');">
+                            <?= csrf_field() ?>
+                            <input type="hidden" name="delete_refund_field_id" value="<?= $f['id'] ?>">
+                            <button type="submit" class="btn btn-danger btn-sm py-0 px-2">✕</button>
+                        </form>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php endforeach; ?>
+        <?php if (!$refund_fields): ?>
+        <p class="text-muted mb-3">No custom fields yet. Add one below.</p>
+        <?php endif; ?>
+
+        <!-- Add new field -->
+        <div class="card bg-light border mt-3">
+            <div class="card-body">
+                <h6 class="fw-bold mb-3">Add New Field</h6>
+                <form method="post">
+                    <?= csrf_field() ?>
+                    <div class="row g-2">
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold">Method Name *</label>
+                            <input type="text" name="field_method" class="form-control form-control-sm" placeholder="e.g. Bank" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-bold">Field Label *</label>
+                            <input type="text" name="field_label" class="form-control form-control-sm" placeholder="e.g. Account Number" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-bold">Type</label>
+                            <select name="field_type" class="form-select form-select-sm">
+                                <option value="text">Text</option>
+                                <option value="number">Number</option>
+                                <option value="select">Dropdown</option>
+                                <option value="textarea">Textarea</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-bold">Order</label>
+                            <input type="number" name="field_order" class="form-control form-control-sm" value="1" min="1">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="field_required" id="freq" checked>
+                                <label class="form-check-label small" for="freq">Required</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">Dropdown Options <small class="text-muted">(comma-separated, only for "Dropdown" type)</small></label>
+                            <input type="text" name="field_options" class="form-control form-control-sm" placeholder="e.g. Option A,Option B,Option C">
+                        </div>
+                        <div class="col-12">
+                            <button type="submit" name="save_refund_field" class="btn btn-success btn-sm"><i class="fas fa-plus me-1"></i>Add Field</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 
