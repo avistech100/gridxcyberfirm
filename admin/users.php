@@ -198,7 +198,7 @@ $enabled_dashboard_count = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser 
             <?php endif; ?>
         </form>
 
-        <!-- Bulk action -->
+        <!-- Bulk action form — toggle buttons are OUTSIDE this form to fix iPhone Safari nested-form bug -->
         <form method="post" id="changelist-form">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="bulk_delete">
@@ -211,7 +211,8 @@ $enabled_dashboard_count = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser 
                 <span class="text-muted small">0 of <?= $total ?> selected</span>
             </div>
 
-        <div class="table-responsive">
+        <!-- DESKTOP TABLE (md and above) -->
+        <div class="table-responsive d-none d-md-block">
             <table class="table table-sm table-hover table-bordered text-nowrap">
                 <thead>
                     <tr>
@@ -238,14 +239,8 @@ $enabled_dashboard_count = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser 
                         <td>$<?= e($u['balance']) ?></td>
                         <td><?= $u['is_staff'] ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times text-danger"></i>' ?></td>
                         <td><?= $u['is_active'] ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times text-danger"></i>' ?></td>
-                        <td>
-                            <form method="post" action="/admin/users.php?action=toggle_dashboard&id=<?= $u['id'] ?><?= $page > 1 ? '&page='.$page : '' ?>" class="d-inline">
-                                <?= csrf_field() ?>
-                                <button type="submit" class="btn btn-xs <?= !empty($u['dashboard_access']) ? 'btn-success' : 'btn-danger' ?>" style="padding: 1px 6px; font-size: 11px; border-radius: 4px;" title="Click to toggle access">
-                                    <i class="fas <?= !empty($u['dashboard_access']) ? 'fa-check' : 'fa-ban' ?> me-1"></i>
-                                    <?= !empty($u['dashboard_access']) ? 'Allowed' : 'Denied' ?>
-                                </button>
-                            </form>
+                        <td id="toggle-cell-<?= $u['id'] ?>">
+                            <!-- Toggle button injected below outside this form -->
                         </td>
                         <td><?= e(substr($u['date_joined'],0,10)) ?></td>
                     </tr>
@@ -256,7 +251,55 @@ $enabled_dashboard_count = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser 
                 </tbody>
             </table>
         </div>
+        </form><!-- END changelist-form — toggle forms are below, safely outside -->
+
+        <!-- TOGGLE FORMS (desktop) — injected into table cells via JS, outside any other form -->
+        <?php foreach ($users as $u): ?>
+        <form method="post"
+              action="/admin/users.php?action=toggle_dashboard&id=<?= $u['id'] ?><?= $page > 1 ? '&page='.$page : '' ?>"
+              class="d-none toggle-form-desktop"
+              data-target="toggle-cell-<?= $u['id'] ?>">
+            <?= csrf_field() ?>
+            <button type="submit"
+                    class="btn btn-xs <?= !empty($u['dashboard_access']) ? 'btn-success' : 'btn-danger' ?>"
+                    style="padding:1px 6px;font-size:11px;border-radius:4px;">
+                <i class="fas <?= !empty($u['dashboard_access']) ? 'fa-check' : 'fa-ban' ?> me-1"></i>
+                <?= !empty($u['dashboard_access']) ? 'Allowed' : 'Denied' ?>
+            </button>
         </form>
+        <?php endforeach; ?>
+
+        <!-- MOBILE CARD LIST (visible on small screens only) -->
+        <div class="d-md-none">
+            <?php if (!$users): ?>
+            <p class="text-muted text-center py-3">No users found.</p>
+            <?php endif; ?>
+            <?php foreach ($users as $u): ?>
+            <div class="border rounded mb-2 p-2" style="background:#fafafa;">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <a href="/admin/users.php?action=edit&id=<?= $u['id'] ?>"
+                       class="fw-bold text-primary" style="font-size:0.95rem;">
+                        <?= e($u['username']) ?>
+                    </a>
+                    <!-- Toggle form standalone — NOT inside any other form -->
+                    <form method="post"
+                          action="/admin/users.php?action=toggle_dashboard&id=<?= $u['id'] ?><?= $page > 1 ? '&page='.$page : '' ?>">
+                        <?= csrf_field() ?>
+                        <button type="submit"
+                                class="btn btn-xs <?= !empty($u['dashboard_access']) ? 'btn-success' : 'btn-danger' ?>"
+                                style="padding:2px 8px;font-size:11px;border-radius:4px;">
+                            <?= !empty($u['dashboard_access']) ? '✔ Allowed' : '✕ Denied' ?>
+                        </button>
+                    </form>
+                </div>
+                <div style="font-size:0.8rem;color:#555;">
+                    <span class="me-2">💰 $<?= e($u['balance']) ?></span>
+                    <span class="me-2"><?= $u['is_active'] ? '<span class="text-success">● Active</span>' : '<span class="text-danger">● Inactive</span>' ?></span>
+                    <span class="text-muted"><?= e(substr($u['date_joined'],0,10)) ?></span>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
 
         <!-- Pagination -->
         <?php if ($pg['total_pages'] > 1): ?>
@@ -414,8 +457,19 @@ $enabled_dashboard_count = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser 
 <?php endif; ?>
 
 <script>
+// Select-all checkbox
 document.getElementById('select-all')?.addEventListener('change', function() {
     document.querySelectorAll('input[name="ids[]"]').forEach(cb => cb.checked = this.checked);
+});
+
+// Inject desktop toggle forms into their table cells (keeps them outside the bulk form)
+document.querySelectorAll('.toggle-form-desktop').forEach(function(form) {
+    const targetId = form.dataset.target;
+    const cell = document.getElementById(targetId);
+    if (cell) {
+        form.classList.remove('d-none');
+        cell.appendChild(form);
+    }
 });
 </script>
 <?php admin_footer(); ?>
