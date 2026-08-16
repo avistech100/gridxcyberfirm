@@ -5,9 +5,32 @@ admin_required();
 set_active_nav('users');
 
 $db     = get_db();
-$action = $_GET['action'] ?? 'list';
-$id     = (int)($_GET['id'] ?? 0);
+try {
+    $db->exec("ALTER TABLE user_gridxuser ADD COLUMN dashboard_access TINYINT(1) NOT NULL DEFAULT 1");
+} catch (Exception $e) {}
+
+$action = $_GET['action'] ?? ($_POST['action'] ?? 'list');
+$id     = (int)($_GET['id'] ?? ($_POST['id'] ?? 0));
 $errors = [];
+
+// ── TOGGLE DASHBOARD ACCESS (Single User) ───────────────────
+if ($action === 'toggle_dashboard' && $id) {
+    verify_csrf();
+    $db->prepare('UPDATE user_gridxuser SET dashboard_access = NOT dashboard_access WHERE id=?')->execute([$id]);
+    set_flash('success', 'Dashboard access status updated.');
+    $page = (int)($_GET['page'] ?? 1);
+    redirect('/admin/users.php' . ($page > 1 ? '?page=' . $page : ''));
+}
+
+// ── MASS TOGGLE DASHBOARD ACCESS (All Users) ─────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'mass_toggle_dashboard') {
+    verify_csrf();
+    $target_state = isset($_POST['target_state']) ? (int)$_POST['target_state'] : 0;
+    $db->prepare('UPDATE user_gridxuser SET dashboard_access = ?')->execute([$target_state]);
+    $msg = $target_state ? 'Dashboard access mass-enabled for all accounts.' : 'Dashboard access mass-disabled for all accounts.';
+    set_flash('success', $msg);
+    redirect('/admin/users.php');
+}
 
 // ── DELETE ─────────────────────────────────────────────────
 if ($action === 'delete' && $id) {
@@ -29,6 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add','edit'])) 
     $is_staff   = isset($_POST['is_staff'])   ? 1 : 0;
     $is_superuser = isset($_POST['is_superuser']) ? 1 : 0;
     $is_active  = isset($_POST['is_active'])  ? 1 : 0;
+    $dashboard_access = isset($_POST['dashboard_access']) ? 1 : 0;
     $password   = $_POST['password'] ?? '';
     $password2  = $_POST['password2'] ?? '';
 
@@ -48,13 +72,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add','edit'])) 
         if ($action === 'add') {
             $hash = hash_password($password);
             $db->prepare('INSERT INTO user_gridxuser
-                (username,email,first_name,last_name,password,balance,os,is_staff,is_superuser,is_active,date_joined)
-                VALUES (?,?,?,?,?,?,?,?,?,?,NOW())')
-               ->execute([$username,$email,$first_name,$last_name,$hash,$balance,$os ?: null,$is_staff,$is_superuser,$is_active]);
+                (username,email,first_name,last_name,password,balance,os,is_staff,is_superuser,is_active,dashboard_access,date_joined)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,NOW())')
+               ->execute([$username,$email,$first_name,$last_name,$hash,$balance,$os ?: null,$is_staff,$is_superuser,$is_active,$dashboard_access]);
             set_flash('success', "User \"{$username}\" was added successfully.");
         } else {
-            $fields = 'username=?,email=?,first_name=?,last_name=?,balance=?,os=?,is_staff=?,is_superuser=?,is_active=?';
-            $params = [$username,$email,$first_name,$last_name,$balance,$os ?: null,$is_staff,$is_superuser,$is_active];
+            $fields = 'username=?,email=?,first_name=?,last_name=?,balance=?,os=?,is_staff=?,is_superuser=?,is_active=?,dashboard_access=?';
+            $params = [$username,$email,$first_name,$last_name,$balance,$os ?: null,$is_staff,$is_superuser,$is_active,$dashboard_access];
             if ($password) {
                 if ($password !== $password2) { $errors[] = 'Passwords do not match.'; goto show_form; }
                 $fields .= ',password=?';
@@ -129,6 +153,10 @@ admin_content_header($page_title, ['User' => '/admin/users.php', $page_title => 
 
 <?= show_flash() ?>
 
+<?php
+$enabled_dashboard_count = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser WHERE dashboard_access = 1")->fetchColumn();
+?>
+
 <?php if ($action === 'list'): ?>
 <!-- LIST VIEW -->
 <div class="card">
@@ -141,6 +169,24 @@ admin_content_header($page_title, ['User' => '/admin/users.php', $page_title => 
         </div>
     </div>
     <div class="card-body">
+        <!-- Mass Dashboard Access Toggle Button Above Table -->
+        <div class="mb-3 p-3 bg-light border rounded d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div>
+                <strong><i class="fas fa-shield-alt text-primary me-1"></i> Global /dashboard Access Control</strong>
+                <div class="text-muted small">Currently <strong><?= $enabled_dashboard_count ?></strong> of <strong><?= $total ?></strong> account<?= $total!==1?'s':'' ?> allowed access.</div>
+            </div>
+            <form method="post" action="/admin/users.php" class="m-0">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="mass_toggle_dashboard">
+                <input type="hidden" name="target_state" value="<?= $enabled_dashboard_count > 0 ? '0' : '1' ?>">
+                <button type="submit" class="btn btn-sm <?= $enabled_dashboard_count > 0 ? 'btn-danger' : 'btn-success' ?>"
+                        onclick="return confirm('Are you sure you want to <?= $enabled_dashboard_count > 0 ? 'DISABLE' : 'ENABLE' ?> /dashboard access for ALL accounts?')">
+                    <i class="fas <?= $enabled_dashboard_count > 0 ? 'fa-user-slash' : 'fa-user-check' ?> me-1"></i>
+                    <?= $enabled_dashboard_count > 0 ? 'Mass-Disable /dashboard Access (All Accounts)' : 'Mass-Enable /dashboard Access (All Accounts)' ?>
+                </button>
+            </form>
+        </div>
+
         <!-- Search -->
         <form method="get" class="mb-3 d-flex gap-2">
             <input type="hidden" name="action" value="list">
@@ -174,6 +220,7 @@ admin_content_header($page_title, ['User' => '/admin/users.php', $page_title => 
                     <th>Balance</th>
                     <th>Staff</th>
                     <th>Active</th>
+                    <th>Dashboard Access</th>
                     <th>Joined</th>
                 </tr>
             </thead>
@@ -190,11 +237,20 @@ admin_content_header($page_title, ['User' => '/admin/users.php', $page_title => 
                     <td>$<?= e($u['balance']) ?></td>
                     <td><?= $u['is_staff'] ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times text-danger"></i>' ?></td>
                     <td><?= $u['is_active'] ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times text-danger"></i>' ?></td>
+                    <td>
+                        <form method="post" action="/admin/users.php?action=toggle_dashboard&id=<?= $u['id'] ?><?= $page > 1 ? '&page='.$page : '' ?>" class="d-inline">
+                            <?= csrf_field() ?>
+                            <button type="submit" class="btn btn-xs <?= !empty($u['dashboard_access']) ? 'btn-success' : 'btn-danger' ?>" style="padding: 2px 8px; font-size: 11px;">
+                                <i class="fas <?= !empty($u['dashboard_access']) ? 'fa-check-circle' : 'fa-times-circle' ?> me-1"></i>
+                                <?= !empty($u['dashboard_access']) ? 'Allowed' : 'Denied' ?>
+                            </button>
+                        </form>
+                    </td>
                     <td><?= e(substr($u['date_joined'],0,10)) ?></td>
                 </tr>
                 <?php endforeach; ?>
                 <?php if (!$users): ?>
-                <tr><td colspan="7" class="text-center text-muted">No users found.</td></tr>
+                <tr><td colspan="8" class="text-center text-muted">No users found.</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>
@@ -298,6 +354,14 @@ admin_content_header($page_title, ['User' => '/admin/users.php', $page_title => 
                                    <?= ($action==='add' || ($row['is_active']??0))?'checked':'' ?>>
                             <label class="form-check-label" for="is_active">Active</label>
                             <small class="form-text text-muted d-block">Unselect this instead of deleting accounts.</small>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="dashboard_access" id="dashboard_access"
+                                   <?= ($action==='add' || ($row['dashboard_access']??1))?'checked':'' ?>>
+                            <label class="form-check-label fw-bold" for="dashboard_access">Allow /dashboard Access</label>
+                            <small class="form-text text-muted d-block">Unselect to block this account from visiting /dashboard (shows fake 404 error page).</small>
                         </div>
                     </div>
                 </div>

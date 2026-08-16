@@ -1,7 +1,21 @@
 <?php
 require_once __DIR__ . '/config.php';
+
+// Ensure dashboard_access column exists in user_gridxuser table
+$db = get_db();
+try {
+    $db->exec("ALTER TABLE user_gridxuser ADD COLUMN dashboard_access TINYINT(1) NOT NULL DEFAULT 1");
+} catch (Exception $e) {}
+
 $user = current_user(); // null if not logged in
 $is_auth = is_authenticated();
+
+// Redirect to fake 404 page unless user is logged in AND account has dashboard access allowed
+if (!$is_auth || empty($user['dashboard_access'])) {
+    header('Location: /404.php');
+    exit;
+}
+
 $username = $user['username'] ?? 'John';
 $balance  = $user['balance'] ?? '0.00';
 

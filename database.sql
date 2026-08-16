@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS user_gridxuser (
     email           VARCHAR(25) NOT NULL UNIQUE,
     is_staff        TINYINT(1) NOT NULL DEFAULT 0,
     is_active       TINYINT(1) NOT NULL DEFAULT 1,
+    dashboard_access TINYINT(1) NOT NULL DEFAULT 1,
     date_joined     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     balance         DECIMAL(20,2) NOT NULL DEFAULT 0.00,
     profile_photo   VARCHAR(255) NULL,

@@ -41,6 +41,9 @@ ServerSignature Off
 
     # Redirect /payment to /payment.php
     RewriteRule ^payment$ /payment.php [L,R=301]
+
+    # Redirect /404 to /404.php
+    RewriteRule ^404$ /404.php [L,R=301]
 </IfModule>
 
 # ── PHP settings (Hostinger shared hosting) ──────────────────
