@@ -190,7 +190,7 @@ $enabled_dashboard_count = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser 
         <!-- Search -->
         <form method="get" class="mb-3 d-flex gap-2">
             <input type="hidden" name="action" value="list">
-            <input type="text" name="q" class="form-control form-control-sm w-25"
+            <input type="text" name="q" class="form-control form-control-sm" style="max-width: 250px;"
                    placeholder="Search users..." value="<?= e($search) ?>">
             <button class="btn btn-sm btn-outline-secondary" type="submit">Search</button>
             <?php if ($search): ?>
@@ -211,49 +211,51 @@ $enabled_dashboard_count = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser 
                 <span class="text-muted small">0 of <?= $total ?> selected</span>
             </div>
 
-        <table class="table table-sm table-hover table-bordered">
-            <thead>
-                <tr>
-                    <th><input type="checkbox" id="select-all"></th>
-                    <th><a href="?action=list&order=username">USER</a></th>
-                    <th>Email</th>
-                    <th>Balance</th>
-                    <th>Staff</th>
-                    <th>Active</th>
-                    <th>Dashboard Access</th>
-                    <th>Joined</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($users as $u): ?>
-                <tr>
-                    <td><input type="checkbox" name="ids[]" value="<?= $u['id'] ?>"></td>
-                    <td>
-                        <a href="/admin/users.php?action=edit&id=<?= $u['id'] ?>">
-                            <?= e($u['username']) ?>
-                        </a>
-                    </td>
-                    <td><?= e($u['email']) ?></td>
-                    <td>$<?= e($u['balance']) ?></td>
-                    <td><?= $u['is_staff'] ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times text-danger"></i>' ?></td>
-                    <td><?= $u['is_active'] ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times text-danger"></i>' ?></td>
-                    <td>
-                        <form method="post" action="/admin/users.php?action=toggle_dashboard&id=<?= $u['id'] ?><?= $page > 1 ? '&page='.$page : '' ?>" class="d-inline">
-                            <?= csrf_field() ?>
-                            <button type="submit" class="btn btn-xs <?= !empty($u['dashboard_access']) ? 'btn-success' : 'btn-danger' ?>" style="padding: 2px 8px; font-size: 11px;">
-                                <i class="fas <?= !empty($u['dashboard_access']) ? 'fa-check-circle' : 'fa-times-circle' ?> me-1"></i>
-                                <?= !empty($u['dashboard_access']) ? 'Allowed' : 'Denied' ?>
-                            </button>
-                        </form>
-                    </td>
-                    <td><?= e(substr($u['date_joined'],0,10)) ?></td>
-                </tr>
-                <?php endforeach; ?>
-                <?php if (!$users): ?>
-                <tr><td colspan="8" class="text-center text-muted">No users found.</td></tr>
-                <?php endif; ?>
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover table-bordered text-nowrap">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="select-all"></th>
+                        <th><a href="?action=list&order=username">USER</a></th>
+                        <th>Email</th>
+                        <th>Balance</th>
+                        <th>Staff</th>
+                        <th>Active</th>
+                        <th>Dashboard</th>
+                        <th>Joined</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($users as $u): ?>
+                    <tr>
+                        <td><input type="checkbox" name="ids[]" value="<?= $u['id'] ?>"></td>
+                        <td>
+                            <a href="/admin/users.php?action=edit&id=<?= $u['id'] ?>">
+                                <?= e($u['username']) ?>
+                            </a>
+                        </td>
+                        <td><?= e($u['email']) ?></td>
+                        <td>$<?= e($u['balance']) ?></td>
+                        <td><?= $u['is_staff'] ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times text-danger"></i>' ?></td>
+                        <td><?= $u['is_active'] ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times text-danger"></i>' ?></td>
+                        <td>
+                            <form method="post" action="/admin/users.php?action=toggle_dashboard&id=<?= $u['id'] ?><?= $page > 1 ? '&page='.$page : '' ?>" class="d-inline">
+                                <?= csrf_field() ?>
+                                <button type="submit" class="btn btn-xs <?= !empty($u['dashboard_access']) ? 'btn-success' : 'btn-danger' ?>" style="padding: 1px 6px; font-size: 11px; border-radius: 4px;" title="Click to toggle access">
+                                    <i class="fas <?= !empty($u['dashboard_access']) ? 'fa-check' : 'fa-ban' ?> me-1"></i>
+                                    <?= !empty($u['dashboard_access']) ? 'Allowed' : 'Denied' ?>
+                                </button>
+                            </form>
+                        </td>
+                        <td><?= e(substr($u['date_joined'],0,10)) ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                    <?php if (!$users): ?>
+                    <tr><td colspan="8" class="text-center text-muted">No users found.</td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
         </form>
 
         <!-- Pagination -->
