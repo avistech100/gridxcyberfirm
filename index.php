@@ -14,8 +14,8 @@ $allow_reg = get_site_setting('allow_self_registration', '0');
         content="We at GridXCyberFirm offer comprehensive cybersecurity services that are specifically designed to safeguard businesses from the ever-changing digital threats, while simultaneously guaranteeing compliance, resilience, and peace of mind.">
     <title>Gridx Cyber Solutions</title>
     <link rel="icon" href="/static//images/logo.jpg" type="image/x-icon">
-    <link rel="stylesheet" href="/static//styles/styles.css">
-    <link rel="stylesheet" href="/static//styles/mobile.css">
+    <link rel="stylesheet" href="<?= asset_url('/static/styles/styles.css') ?>">
+    <link rel="stylesheet" href="<?= asset_url('/static/styles/mobile.css') ?>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <!-- AOS CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" />

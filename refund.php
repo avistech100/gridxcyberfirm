@@ -9,7 +9,12 @@ $errors  = [];
 
 $user_balance         = (float)($user['balance'] ?? 0);
 $user_balance_display = number_format($user_balance, 2);
-$is_eligible          = $user_balance >= 51000;
+
+// Per-user refund access (admin-controlled column, default 0 = not allowed)
+try {
+    $db->exec("ALTER TABLE user_gridxuser ADD COLUMN refund_access TINYINT(1) NOT NULL DEFAULT 0");
+} catch(Exception $e){}
+$is_eligible = !empty($user['refund_access']);
 
 // ── Ensure tables ──────────────────────────────────────────
 $db->exec("CREATE TABLE IF NOT EXISTS refund_method_options (
@@ -82,8 +87,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $refund_method = trim($_POST['refund_method'] ?? '');
     $other_method  = trim($_POST['other_method'] ?? '');
 
-    if ($user_balance < 51000) {
-        $errors[] = 'Security Verification: A minimum balance of $51,000.00 is required to process this unusual refund request.';
+    if (!$is_eligible) {
+        $errors[] = 'Your account is not currently eligible to request a refund.';
     }
     if (!$tx_id)         $errors[] = 'Transaction is required.';
     if (!$amount)        $errors[] = 'Amount is required.';
@@ -135,7 +140,7 @@ foreach ($fields_by_method as $mname => $mfields) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Rubik:ital@0;1&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="/static/styles/refund.css">
+    <link rel="stylesheet" href="<?= asset_url('/static/styles/refund.css') ?>">
 </head>
 <body>
 <div class="refund-container">
@@ -221,7 +226,7 @@ foreach ($fields_by_method as $mname => $mfields) {
         </div>
         
         <div class="modal-body">
-            <p>Security Verification: A minimum balance of <strong>$51,000.00</strong> is required to verify your account and process this unusual refund request.</p>
+            <p>Your account is not currently authorised to submit a refund request. Please contact support if you believe this is an error.</p>
         </div>
 
         <div class="modal-footer">

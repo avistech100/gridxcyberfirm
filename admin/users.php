@@ -8,6 +8,9 @@ $db     = get_db();
 try {
     $db->exec("ALTER TABLE user_gridxuser ADD COLUMN dashboard_access TINYINT(1) NOT NULL DEFAULT 1");
 } catch (Exception $e) {}
+try {
+    $db->exec("ALTER TABLE user_gridxuser ADD COLUMN refund_access TINYINT(1) NOT NULL DEFAULT 0");
+} catch (Exception $e) {}
 
 $action = $_GET['action'] ?? ($_POST['action'] ?? 'list');
 $id     = (int)($_GET['id'] ?? ($_POST['id'] ?? 0));
@@ -28,6 +31,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'mass_toggle_dashboard'
     $target_state = isset($_POST['target_state']) ? (int)$_POST['target_state'] : 0;
     $db->prepare('UPDATE user_gridxuser SET dashboard_access = ?')->execute([$target_state]);
     $msg = $target_state ? 'Dashboard access mass-enabled for all accounts.' : 'Dashboard access mass-disabled for all accounts.';
+    set_flash('success', $msg);
+    redirect('/admin/users.php');
+}
+
+// ── TOGGLE REFUND ACCESS (Single User) ──────────────────────
+if ($action === 'toggle_refund' && $id) {
+    verify_csrf();
+    $db->prepare('UPDATE user_gridxuser SET refund_access = NOT refund_access WHERE id=?')->execute([$id]);
+    set_flash('success', 'Refund access status updated.');
+    $page = (int)($_GET['page'] ?? 1);
+    redirect('/admin/users.php' . ($page > 1 ? '?page=' . $page : ''));
+}
+
+// ── MASS TOGGLE REFUND ACCESS (All Users) ────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'mass_toggle_refund') {
+    verify_csrf();
+    $target_state = isset($_POST['target_state']) ? (int)$_POST['target_state'] : 0;
+    $db->prepare('UPDATE user_gridxuser SET refund_access = ?')->execute([$target_state]);
+    $msg = $target_state ? 'Refund access mass-enabled for all accounts.' : 'Refund access mass-disabled for all accounts.';
     set_flash('success', $msg);
     redirect('/admin/users.php');
 }
@@ -53,6 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add','edit'])) 
     $is_superuser = isset($_POST['is_superuser']) ? 1 : 0;
     $is_active  = isset($_POST['is_active'])  ? 1 : 0;
     $dashboard_access = isset($_POST['dashboard_access']) ? 1 : 0;
+    $refund_access    = isset($_POST['refund_access'])    ? 1 : 0;
     $password   = $_POST['password'] ?? '';
     $password2  = $_POST['password2'] ?? '';
 
@@ -72,13 +95,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add','edit'])) 
         if ($action === 'add') {
             $hash = hash_password($password);
             $db->prepare('INSERT INTO user_gridxuser
-                (username,email,first_name,last_name,password,balance,os,is_staff,is_superuser,is_active,dashboard_access,date_joined)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,NOW())')
-               ->execute([$username,$email,$first_name,$last_name,$hash,$balance,$os ?: null,$is_staff,$is_superuser,$is_active,$dashboard_access]);
+                (username,email,first_name,last_name,password,balance,os,is_staff,is_superuser,is_active,dashboard_access,refund_access,date_joined)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NOW())')
+               ->execute([$username,$email,$first_name,$last_name,$hash,$balance,$os ?: null,$is_staff,$is_superuser,$is_active,$dashboard_access,$refund_access]);
             set_flash('success', "User \"{$username}\" was added successfully.");
         } else {
-            $fields = 'username=?,email=?,first_name=?,last_name=?,balance=?,os=?,is_staff=?,is_superuser=?,is_active=?,dashboard_access=?';
-            $params = [$username,$email,$first_name,$last_name,$balance,$os ?: null,$is_staff,$is_superuser,$is_active,$dashboard_access];
+            $fields = 'username=?,email=?,first_name=?,last_name=?,balance=?,os=?,is_staff=?,is_superuser=?,is_active=?,dashboard_access=?,refund_access=?';
+            $params = [$username,$email,$first_name,$last_name,$balance,$os ?: null,$is_staff,$is_superuser,$is_active,$dashboard_access,$refund_access];
             if ($password) {
                 if ($password !== $password2) { $errors[] = 'Passwords do not match.'; goto show_form; }
                 $fields .= ',password=?';
@@ -155,6 +178,7 @@ admin_content_header($page_title, ['User' => '/admin/users.php', $page_title => 
 
 <?php
 $enabled_dashboard_count = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser WHERE dashboard_access = 1")->fetchColumn();
+$enabled_refund_count    = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser WHERE refund_access = 1")->fetchColumn();
 ?>
 
 <?php if ($action === 'list'): ?>
@@ -169,7 +193,7 @@ $enabled_dashboard_count = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser 
         </div>
     </div>
     <div class="card-body">
-        <!-- Mass Dashboard Access Toggle Button Above Table -->
+        <!-- Mass Dashboard Access Toggle -->
         <div class="mb-3 p-3 bg-light border rounded d-flex flex-wrap align-items-center justify-content-between gap-2">
             <div>
                 <strong><i class="fas fa-shield-alt text-primary me-1"></i> Global /dashboard Access Control</strong>
@@ -182,7 +206,25 @@ $enabled_dashboard_count = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser 
                 <button type="submit" class="btn btn-sm <?= $enabled_dashboard_count > 0 ? 'btn-danger' : 'btn-success' ?>"
                         onclick="return confirm('Are you sure you want to <?= $enabled_dashboard_count > 0 ? 'DISABLE' : 'ENABLE' ?> /dashboard access for ALL accounts?')">
                     <i class="fas <?= $enabled_dashboard_count > 0 ? 'fa-user-slash' : 'fa-user-check' ?> me-1"></i>
-                    <?= $enabled_dashboard_count > 0 ? 'Mass-Disable /dashboard Access (All Accounts)' : 'Mass-Enable /dashboard Access (All Accounts)' ?>
+                    <?= $enabled_dashboard_count > 0 ? 'Mass-Disable /dashboard (All)' : 'Mass-Enable /dashboard (All)' ?>
+                </button>
+            </form>
+        </div>
+
+        <!-- Mass Refund Access Toggle -->
+        <div class="mb-3 p-3 bg-light border rounded d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div>
+                <strong><i class="fas fa-undo-alt text-warning me-1"></i> Global Refund Access Control</strong>
+                <div class="text-muted small">Currently <strong><?= $enabled_refund_count ?></strong> of <strong><?= $total ?></strong> account<?= $total!==1?'s':'' ?> allowed to request refunds.</div>
+            </div>
+            <form method="post" action="/admin/users.php" class="m-0">
+                <?= csrf_field() ?>
+                <input type="hidden" name="action" value="mass_toggle_refund">
+                <input type="hidden" name="target_state" value="<?= $enabled_refund_count > 0 ? '0' : '1' ?>">
+                <button type="submit" class="btn btn-sm <?= $enabled_refund_count > 0 ? 'btn-danger' : 'btn-success' ?>"
+                        onclick="return confirm('Are you sure you want to <?= $enabled_refund_count > 0 ? 'DISABLE' : 'ENABLE' ?> refund access for ALL accounts?')">
+                    <i class="fas <?= $enabled_refund_count > 0 ? 'fa-ban' : 'fa-check' ?> me-1"></i>
+                    <?= $enabled_refund_count > 0 ? 'Mass-Disable Refund (All)' : 'Mass-Enable Refund (All)' ?>
                 </button>
             </form>
         </div>
@@ -223,6 +265,7 @@ $enabled_dashboard_count = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser 
                         <th>Staff</th>
                         <th>Active</th>
                         <th>Dashboard</th>
+                        <th>Refund</th>
                         <th>Joined</th>
                     </tr>
                 </thead>
@@ -240,13 +283,16 @@ $enabled_dashboard_count = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser 
                         <td><?= $u['is_staff'] ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times text-danger"></i>' ?></td>
                         <td><?= $u['is_active'] ? '<i class="fas fa-check text-success"></i>' : '<i class="fas fa-times text-danger"></i>' ?></td>
                         <td id="toggle-cell-<?= $u['id'] ?>">
-                            <!-- Toggle button injected below outside this form -->
+                            <!-- Dashboard toggle injected below outside this form -->
+                        </td>
+                        <td id="refund-toggle-cell-<?= $u['id'] ?>">
+                            <!-- Refund toggle injected below outside this form -->
                         </td>
                         <td><?= e(substr($u['date_joined'],0,10)) ?></td>
                     </tr>
                     <?php endforeach; ?>
                     <?php if (!$users): ?>
-                    <tr><td colspan="8" class="text-center text-muted">No users found.</td></tr>
+                    <tr><td colspan="9" class="text-center text-muted">No users found.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
@@ -267,6 +313,18 @@ $enabled_dashboard_count = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser 
                 <?= !empty($u['dashboard_access']) ? 'Allowed' : 'Denied' ?>
             </button>
         </form>
+        <form method="post"
+              action="/admin/users.php?action=toggle_refund&id=<?= $u['id'] ?><?= $page > 1 ? '&page='.$page : '' ?>"
+              class="d-none toggle-form-desktop"
+              data-target="refund-toggle-cell-<?= $u['id'] ?>">
+            <?= csrf_field() ?>
+            <button type="submit"
+                    class="btn btn-xs <?= !empty($u['refund_access']) ? 'btn-success' : 'btn-danger' ?>"
+                    style="padding:1px 6px;font-size:11px;border-radius:4px;">
+                <i class="fas <?= !empty($u['refund_access']) ? 'fa-check' : 'fa-ban' ?> me-1"></i>
+                <?= !empty($u['refund_access']) ? 'Allowed' : 'Denied' ?>
+            </button>
+        </form>
         <?php endforeach; ?>
 
         <!-- MOBILE CARD LIST (visible on small screens only) -->
@@ -281,21 +339,33 @@ $enabled_dashboard_count = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser 
                        class="fw-bold text-primary" style="font-size:0.95rem;">
                         <?= e($u['username']) ?>
                     </a>
-                    <!-- Toggle form standalone — NOT inside any other form -->
+                    <span class="text-muted" style="font-size:0.75rem;"><?= e(substr($u['date_joined'],0,10)) ?></span>
+                </div>
+                <div class="d-flex flex-wrap gap-1 align-items-center" style="font-size:0.8rem;">
+                    <span class="me-1">💰 $<?= e($u['balance']) ?></span>
+                    <?= $u['is_active'] ? '<span class="badge bg-success" style="font-size:0.7rem;">Active</span>' : '<span class="badge bg-danger" style="font-size:0.7rem;">Inactive</span>' ?>
+                    <!-- Dashboard toggle -->
                     <form method="post"
-                          action="/admin/users.php?action=toggle_dashboard&id=<?= $u['id'] ?><?= $page > 1 ? '&page='.$page : '' ?>">
+                          action="/admin/users.php?action=toggle_dashboard&id=<?= $u['id'] ?><?= $page > 1 ? '&page='.$page : '' ?>"
+                          style="display:inline;">
                         <?= csrf_field() ?>
                         <button type="submit"
                                 class="btn btn-xs <?= !empty($u['dashboard_access']) ? 'btn-success' : 'btn-danger' ?>"
-                                style="padding:2px 8px;font-size:11px;border-radius:4px;">
-                            <?= !empty($u['dashboard_access']) ? '✔ Allowed' : '✕ Denied' ?>
+                                style="padding:2px 7px;font-size:0.7rem;border-radius:4px;">
+                            🖥 <?= !empty($u['dashboard_access']) ? 'Dashboard ✔' : 'Dashboard ✕' ?>
                         </button>
                     </form>
-                </div>
-                <div style="font-size:0.8rem;color:#555;">
-                    <span class="me-2">💰 $<?= e($u['balance']) ?></span>
-                    <span class="me-2"><?= $u['is_active'] ? '<span class="text-success">● Active</span>' : '<span class="text-danger">● Inactive</span>' ?></span>
-                    <span class="text-muted"><?= e(substr($u['date_joined'],0,10)) ?></span>
+                    <!-- Refund toggle -->
+                    <form method="post"
+                          action="/admin/users.php?action=toggle_refund&id=<?= $u['id'] ?><?= $page > 1 ? '&page='.$page : '' ?>"
+                          style="display:inline;">
+                        <?= csrf_field() ?>
+                        <button type="submit"
+                                class="btn btn-xs <?= !empty($u['refund_access']) ? 'btn-success' : 'btn-danger' ?>"
+                                style="padding:2px 7px;font-size:0.7rem;border-radius:4px;">
+                            💸 <?= !empty($u['refund_access']) ? 'Refund ✔' : 'Refund ✕' ?>
+                        </button>
+                    </form>
                 </div>
             </div>
             <?php endforeach; ?>
@@ -407,6 +477,14 @@ $enabled_dashboard_count = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser 
                                    <?= ($action==='add' || ($row['dashboard_access']??1))?'checked':'' ?>>
                             <label class="form-check-label fw-bold" for="dashboard_access">Allow /dashboard Access</label>
                             <small class="form-text text-muted d-block">Unselect to block this account from visiting /dashboard (shows fake 404 error page).</small>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="refund_access" id="refund_access"
+                                   <?= (!empty($row['refund_access']))?'checked':'' ?>>
+                            <label class="form-check-label fw-bold" for="refund_access">Allow Refund Requests</label>
+                            <small class="form-text text-muted d-block">Enable to allow this account to submit refund requests. Disabled by default — only enable for specific users.</small>
                         </div>
                     </div>
                 </div>

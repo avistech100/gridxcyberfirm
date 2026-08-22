@@ -121,6 +121,16 @@ function django_check_pbkdf2(string $password, string $encoded): bool {
     return hash_equals($hash, base64_encode($dk));
 }
 
+// ── Cache-busting asset URL helper ────────────────────────
+// Appends ?v=<filemtime> to any static asset path so browsers
+// always fetch the latest version after a deploy.
+function asset_url(string $path): string {
+    // $path should be relative to web root, e.g. '/static/styles/dashboard.css'
+    $full = $_SERVER['DOCUMENT_ROOT'] . $path;
+    $ts   = file_exists($full) ? filemtime($full) : time();
+    return $path . '?v=' . $ts;
+}
+
 // Redirect helper
 function redirect(string $url): void {
     header('Location: ' . $url);

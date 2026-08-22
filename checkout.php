@@ -116,8 +116,8 @@ $GIFT_CARDS = ['apple','itunes','google_play','amazon','steam','playstation','xb
     <link href="https://fonts.googleapis.com/css2?family=Rubik:ital@0;1&display=swap" rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Crypto Checkout</title>
-    <link rel="stylesheet" href="/static/styles/checkout.css">
-    <script src="/static/scripts/checkout.js" defer></script>
+    <link rel="stylesheet" href="<?= asset_url('/static/styles/checkout.css') ?>">
+    <script src="<?= asset_url('/static/scripts/checkout.js') ?>" defer></script>
 </head>
 <body>
 <div class="container">

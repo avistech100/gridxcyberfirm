@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link href="https://fonts.googleapis.com/css2?family=Rubik:ital@0;1&display=optional" rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login | GridX</title>
-    <link rel="stylesheet" href="/static/styles/form.css">
+    <link rel="stylesheet" href="<?= asset_url('/static/styles/form.css') ?>">
 </head>
 <div class="auth-container">
     <a href="/"> «Dashboard</a>

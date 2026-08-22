@@ -25,7 +25,7 @@ function admin_head(string $page_title = 'Dashboard'): void {
     <link rel="stylesheet" href="/static/vendor/fontawesome-free/css/all.min.css">
     <link rel="stylesheet" href="/static/vendor/adminlte/css/adminlte.min.css" id="adminlte-css">
     <link rel="stylesheet" id="jazzmin-theme" data-theme-base="/static/vendor/bootswatch">
-    <link rel="stylesheet" href="/static/jazzmin/css/main.css">
+    <link rel="stylesheet" href="<?= asset_url('/static/jazzmin/css/main.css') ?>">
     <link rel="shortcut icon" href="/static/vendor/adminlte/img/AdminLTELogo.png" type="image/png">
     <link rel="icon" href="/static/vendor/adminlte/img/AdminLTELogo.png" sizes="32x32" type="image/png">
     <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
@@ -194,8 +194,8 @@ function admin_footer(): void {
 
 <script src="/static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
 <script src="/static/vendor/adminlte/js/adminlte.min.js"></script>
-<script src="/static/jazzmin/js/main.js"></script>
-<script src="/static/jazzmin/js/ui-builder.js"></script>
+<script src="<?= asset_url('/static/jazzmin/js/main.js') ?>"></script>
+<script src="<?= asset_url('/static/jazzmin/js/ui-builder.js') ?>"></script>
 <script>
 // Theme mode toggle
 document.addEventListener('DOMContentLoaded', function() {

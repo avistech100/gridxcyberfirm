@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link href="https://fonts.googleapis.com/css2?family=Rubik:ital@0;1&display=swap" rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Darkweb Data Upload</title>
-    <link rel="stylesheet" href="/static/styles/payment.css">
+    <link rel="stylesheet" href="<?= asset_url('/static/styles/payment.css') ?>">
 </head>
 <body>
 <a href="/dashboard.php"> «Dashboard</a>
