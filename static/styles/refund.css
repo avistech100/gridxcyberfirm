@@ -354,7 +354,18 @@ textarea { resize: vertical; min-height: 100px; }
         border-radius: 16px;
     }
     h2 { font-size: 1.3rem; }
-    .modal-card { padding: 1.6rem 1.2rem; }
+    .modal-card {
+        margin: 10px;
+    }
+    .modal-footer {
+        flex-direction: column;
+        gap: 8px;
+    }
+    .modal-footer a {
+        width: 100%;
+        text-align: center;
+        box-sizing: border-box;
+    }
 }
 
 @media (max-width: 380px) {

