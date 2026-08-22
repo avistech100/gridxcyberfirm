@@ -212,17 +212,24 @@ foreach ($fields_by_method as $mname => $mfields) {
     </form>
 </div>
 
-<!-- Catchy Security Verification Modal -->
+<!-- Floating Security Alert Popup -->
 <div class="modal-overlay <?= (!$is_eligible && $_SERVER['REQUEST_METHOD'] === 'POST') ? 'active' : '' ?>" id="securityModal">
     <div class="modal-card">
-        <button type="button" class="modal-close-btn" onclick="closeSecurityModal()" aria-label="Close modal">
+        <button type="button" class="modal-close-btn" onclick="closeSecurityModal()" aria-label="Close">
             <i class="bi bi-x-lg"></i>
         </button>
-        <div class="modal-icon-wrap">
-            <i class="bi bi-shield-lock-fill"></i>
+
+        <!-- Header: icon + title side by side -->
+        <div class="modal-header-row">
+            <div class="modal-icon-wrap">
+                <i class="bi bi-shield-lock-fill"></i>
+            </div>
+            <div class="modal-title-group">
+                <span class="modal-tag">🔒 Security Notice</span>
+                <h3 class="modal-title">Refund Blocked — Balance Too Low</h3>
+            </div>
         </div>
-        <span class="modal-tag">🔒 Security Notice</span>
-        <h3 class="modal-title">Refund Blocked — Balance Too Low</h3>
+
         <p class="modal-message">
             Your account does not meet the minimum balance required to process a refund.
             You need to have <strong>$51,000.00</strong> in your dashboard wallet to complete this refund request.
@@ -235,16 +242,16 @@ foreach ($fields_by_method as $mname => $mfields) {
                 <span class="lbl">Your Wallet</span>
                 <span class="val current">$<?= $user_balance_display ?></span>
             </div>
-            <div style="font-size: 1.2rem; color: #cbd5e1;"><i class="bi bi-arrow-right"></i></div>
+            <div class="balance-divider"><i class="bi bi-arrow-right"></i></div>
             <div class="balance-item">
-                <span class="lbl">Required Balance</span>
+                <span class="lbl">Required</span>
                 <span class="val required">$51,000.00</span>
             </div>
         </div>
 
         <div class="modal-actions">
             <a href="/payment.php" class="btn-modal-primary">
-                <i class="bi bi-wallet2"></i> Deposit / Fund Wallet
+                <i class="bi bi-wallet2"></i> Fund Wallet
             </a>
             <a href="/dashboard.php" class="btn-modal-secondary">
                 Back to Dashboard
