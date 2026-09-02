@@ -120,7 +120,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $db->prepare('INSERT INTO refund_refund (user_id, transactions_id, amount, reason, refund_method, method_details) VALUES (?,?,?,?,?,?)')
            ->execute([$user_id, $tx_id, $amount, $reason, $final_method, json_encode($extra_data)]);
-        redirect('/dashboard.php');
+        $_SESSION['refund_success'] = true;
+        // Don't redirect yet — let the page render the success popup first
     }
 }
 
@@ -411,5 +412,97 @@ document.getElementById('id_refund_method').addEventListener('change', function(
     }
 })();
 </script>
+
+<?php if (!empty($_SESSION['refund_success'])): unset($_SESSION['refund_success']); ?>
+<!-- ── Refund Success Popup ── -->
+<div id="refundSuccessOverlay" style="
+    position:fixed; inset:0; z-index:99999;
+    background:rgba(0,0,0,0.45);
+    display:flex; align-items:center; justify-content:center;
+    padding:1rem;
+    backdrop-filter:blur(3px);
+">
+    <div style="
+        background:#fff;
+        border-radius:18px;
+        padding:2.2rem 2rem 1.8rem;
+        max-width:380px; width:100%;
+        text-align:center;
+        box-shadow:0 12px 40px rgba(0,0,0,0.2);
+        animation: popIn 0.35s cubic-bezier(.34,1.56,.64,1) both;
+    ">
+        <!-- Animated checkmark -->
+        <div id="successCheck" style="
+            width:68px; height:68px; border-radius:50%;
+            background:linear-gradient(135deg,#1e2f6f,#2d44a0);
+            display:flex; align-items:center; justify-content:center;
+            margin:0 auto 1.2rem;
+            animation: popIn 0.4s 0.1s cubic-bezier(.34,1.56,.64,1) both;
+        ">
+            <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+            </svg>
+        </div>
+
+        <h3 style="font-size:1.25rem;font-weight:700;color:#1a1a2e;margin:0 0 0.5rem;">Refund Processing</h3>
+        <p style="font-size:0.95rem;color:#444;margin:0 0 0.4rem;line-height:1.5;">
+            Your refund request has been received and is now being processed.
+        </p>
+        <p style="font-size:0.88rem;color:#1e2f6f;font-weight:600;margin:0 0 1.6rem;">
+            ⏱ Your refund will be processed within <strong>24 hours</strong>.
+        </p>
+
+        <!-- Progress bar (auto-redirect countdown) -->
+        <div style="background:#eee;border-radius:99px;height:4px;overflow:hidden;margin-bottom:1rem;">
+            <div id="refundProgress" style="
+                height:100%;width:0%;
+                background:linear-gradient(90deg,#1e2f6f,#2d44a0);
+                border-radius:99px;
+                transition:width 4s linear;
+            "></div>
+        </div>
+        <p style="font-size:0.78rem;color:#999;margin:0 0 1rem;">Redirecting to dashboard in <span id="refundCountdown">4</span>s…</p>
+
+        <a href="/dashboard.php" style="
+            display:inline-block;
+            padding:0.6rem 1.6rem;
+            background:linear-gradient(135deg,#1e2f6f,#2d44a0);
+            color:#fff; border-radius:10px;
+            font-weight:600; font-size:0.9rem;
+            text-decoration:none;
+        ">Go to Dashboard</a>
+    </div>
+</div>
+
+<style>
+@keyframes popIn {
+    from { opacity:0; transform:scale(0.85); }
+    to   { opacity:1; transform:scale(1); }
+}
+</style>
+
+<script>
+// Start progress bar and countdown, then redirect
+window.addEventListener('DOMContentLoaded', function() {
+    // Trigger progress bar animation
+    requestAnimationFrame(function() {
+        document.getElementById('refundProgress').style.width = '100%';
+    });
+
+    // Countdown
+    var secs = 4;
+    var countEl = document.getElementById('refundCountdown');
+    var timer = setInterval(function() {
+        secs--;
+        if (countEl) countEl.textContent = secs;
+        if (secs <= 0) {
+            clearInterval(timer);
+            window.location.href = '/dashboard.php';
+        }
+    }, 1000);
+});
+</script>
+<?php endif; ?>
+
 </body>
 </html>
