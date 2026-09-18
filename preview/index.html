@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device & Social Portal Hub</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Base Reset & Variables */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            --bg-page: #F8FAFC;
+            --bg-card: #FFFFFF;
+            --border-color: #E2E8F0;
+            --border-hover: #CBD5E1;
+            --text-primary: #0F172A;
+            --text-secondary: #475569;
+            --text-muted: #94A3B8;
+            --accent-blue: #0284C7;
+            --status-green: #10B981;
+            --shadow-subtle: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.05);
+            --shadow-card-hover: 0 10px 22px -4px rgba(15, 23, 42, 0.08), 0 4px 8px -2px rgba(15, 23, 42, 0.04);
+        }
+
+        body {
+            background-color: var(--bg-page);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Header */
+        .portal-header {
+            background-color: #FFFFFF;
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+
+        .header-inner {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .brand-group {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+            background: #0F172A;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
+        }
+
+        .brand-icon svg {
+            width: 22px;
+            height: 22px;
+            fill: currentColor;
+        }
+
+        .brand-text h1 {
+            font-size: 17.5px;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        .brand-text p {
+            font-size: 12.5px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .device-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #F1F5F9;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--status-green);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        /* Main Container */
+        .portal-main {
+            flex: 1;
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 32px 24px 60px;
+        }
+
+        /* Unified Grid with all 14 modules */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+            gap: 20px;
+        }
+
+        /* Standard Portal Card */
+        .module-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 22px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: var(--shadow-subtle);
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+        }
+
+        .module-card:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-card-hover);
+        }
+
+        .card-top {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        /* Icon Boxes */
+        .icon-box {
+            width: 52px;
+            height: 52px;
+            border-radius: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s ease;
+        }
+
+        .module-card:hover .icon-box {
+            transform: scale(1.05);
+        }
+
+        .icon-box svg {
+            width: 29px;
+            height: 29px;
+            display: block;
+        }
+
+        /* Brand Colors for Icons */
+        .icon-box.whatsapp {
+            background-color: #25D366;
+            color: #FFFFFF;
+        }
+
+        .icon-box.snapchat {
+            background-color: #FFFC00;
+            color: #16191C;
+        }
+
+        .icon-box.facebook {
+            background-color: #1877F2;
+            color: #FFFFFF;
+        }
+
+        .icon-box.social-hub {
+            background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+            color: #FFFFFF;
+        }
+
+        .icon-box.calls {
+            background-color: #10B981;
+            color: #FFFFFF;
+        }
+
+        .icon-box.messages {
+            background-color: #0284C7;
+            color: #FFFFFF;
+        }
+
+        .icon-box.deleted {
+            background-color: #EF4444;
+            color: #FFFFFF;
+        }
+
+        .icon-box.location {
+            background-color: #4F46E5;
+            color: #FFFFFF;
+        }
+
+        .icon-box.live {
+            background-color: #DC2626;
+            color: #FFFFFF;
+        }
+
+        .icon-box.remote {
+            background-color: #7C3AED;
+            color: #FFFFFF;
+        }
+
+        .icon-box.gallery {
+            background: linear-gradient(135deg, #F43F5E 0%, #FB923C 100%);
+            color: #FFFFFF;
+        }
+
+        .icon-box.files {
+            background-color: #2563EB;
+            color: #FFFFFF;
+        }
+
+        .icon-box.browser {
+            background-color: #0EA5E9;
+            color: #FFFFFF;
+        }
+
+        .icon-box.export {
+            background-color: #059669;
+            color: #FFFFFF;
+        }
+
+        .card-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .card-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 5px;
+        }
+
+        .module-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+        }
+
+        .module-status {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            background-color: #F1F5F9;
+            color: var(--text-secondary);
+        }
+
+        .module-status.live {
+            background-color: #FEF2F2;
+            color: #DC2626;
+        }
+
+        .module-status.synced {
+            background-color: #ECFDF5;
+            color: #059669;
+        }
+
+        .module-desc {
+            font-size: 13.5px;
+            color: var(--text-secondary);
+            line-height: 1.45;
+            font-weight: 500;
+        }
+
+        /* Card Footer & Standard Button */
+        .card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            border-top: 1px solid #F1F5F9;
+            padding-top: 14px;
+        }
+
+        /* Standard Open Button */
+        .standard-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background-color: #0F172A;
+            color: #FFFFFF;
+            border: 1px solid transparent;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-decoration: none;
+            line-height: 1;
+        }
+
+        .standard-btn:hover {
+            background-color: #1E293B;
+            transform: translateX(2px);
+        }
+
+        .standard-btn:active {
+            transform: scale(0.98);
+        }
+
+        .standard-btn svg {
+            width: 14px;
+            height: 14px;
+            fill: currentColor;
+            transition: transform 0.15s ease;
+        }
+
+        .module-card:hover .standard-btn svg {
+            transform: translateX(2px);
+        }
+
+        /* Portal Footer */
+        .portal-footer {
+            background-color: #FFFFFF;
+            border-top: 1px solid var(--border-color);
+            padding: 22px 24px;
+            text-align: center;
+            margin-top: auto;
+        }
+
+        .portal-footer p {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 768px) {
+            .header-inner {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .header-meta {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Navigation Header -->
+    <header class="portal-header">
+        <div class="header-inner">
+            <div class="brand-group">
+                <div class="brand-icon">
+                    <svg viewBox="0 0 24 24"><path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/></svg>
+                </div>
+                <div class="brand-text">
+                    <h1>Portal Hub & Navigation Center</h1>
+                    <p>Executive Device Monitoring & Unified Communications</p>
+                </div>
+            </div>
+
+            <div class="header-meta">
+                <div class="device-badge">
+                    <span class="pulse-dot"></span>
+                    <span>Target Device: Active & Connected</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area with all 14 modules together -->
+    <main class="portal-main">
+
+        <div class="cards-grid">
+
+            <!-- 1. WhatsApp (Official WhatsApp Logo) -->
+            <div class="module-card">
+                <div class="card-top">
+                    <div class="icon-box whatsapp" title="WhatsApp">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+                        </svg>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-header-row">
+                            <span class="module-name">WhatsApp</span>
+                            <span class="module-status synced">Active</span>
+                        </div>
+                        <p class="module-desc">Incoming & outgoing chats, voice notes, media attachments, and status stories.</p>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="whatsapp.html" class="standard-btn">
+                        Open Page
+                        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 2. Snapchat (Official Snapchat Logo) -->
+            <div class="module-card">
+                <div class="card-top">
+                    <div class="icon-box snapchat" title="Snapchat">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M12.206.793c.99 0 4.347.276 5.93 3.821.529 1.193.403 3.219.299 4.847l-.003.06c-.012.18-.022.345-.03.51.075.045.203.09.401.09.3-.016.659-.12 1.033-.301.165-.088.344-.104.464-.104.182 0 .359.029.509.09.45.149.734.479.734.838.015.449-.39.839-1.213 1.168-.089.029-.209.075-.344.119-.45.135-1.139.36-1.333.81-.09.224-.061.524.12.868l.015.015c.06.136 1.526 3.475 4.791 4.014.255.044.435.27.42.509 0 .075-.015.149-.045.225-.24.569-1.273.988-3.146 1.271-.059.091-.12.375-.164.57-.029.179-.074.36-.134.553-.076.271-.27.405-.555.405h-.03c-.135 0-.313-.031-.538-.074-.36-.075-.765-.135-1.273-.135-.3 0-.599.015-.913.074-.6.104-1.123.464-1.723.884-.853.599-1.826 1.288-3.294 1.288-.06 0-.119-.015-.18-.015h-.149c-1.468 0-2.427-.675-3.279-1.288-.599-.42-1.107-.779-1.707-.884-.314-.045-.629-.074-.928-.074-.54 0-.958.089-1.272.149-.211.043-.391.074-.54.074-.374 0-.523-.224-.583-.42-.061-.192-.09-.389-.135-.567-.046-.181-.105-.494-.166-.57-1.918-.222-2.95-.642-3.189-1.226-.031-.063-.052-.15-.055-.225-.015-.243.165-.465.42-.509 3.264-.54 4.73-3.879 4.791-4.02l.016-.029c.18-.345.224-.645.119-.869-.195-.434-.884-.658-1.332-.809-.121-.029-.24-.074-.346-.119-1.107-.435-1.257-.93-1.197-1.273.09-.479.674-.793 1.168-.793.146 0 .27.029.383.074.42.194.789.3 1.104.3.234 0 .384-.06.465-.105l-.046-.569c-.098-1.626-.225-3.651.307-4.837C7.392 1.077 10.739.807 11.727.807l.419-.015h.06z" fill="#FFFFFF" stroke="#16191C" stroke-width="0.85" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-header-row">
+                            <span class="module-name">Snapchat</span>
+                            <span class="module-status synced">Live Feed</span>
+                        </div>
+                        <p class="module-desc">Snapchat Web dashboard, Bitmoji direct messages, snap streaks, and story logs.</p>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="snapchat.html" class="standard-btn">
+                        Open Page
+                        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 3. Facebook (Official Facebook Logo) -->
+            <div class="module-card">
+                <div class="card-top">
+                    <div class="icon-box facebook" title="Facebook">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                        </svg>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-header-row">
+                            <span class="module-name">Facebook</span>
+                            <span class="module-status synced">Active</span>
+                        </div>
+                        <p class="module-desc">Timeline feed activity, private Messenger logs, notifications, and friend connections.</p>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="facebook.html" class="standard-btn">
+                        Open Page
+                        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 4. Social Apps Hub -->
+            <div class="module-card">
+                <div class="card-top">
+                    <div class="icon-box social-hub" title="Social Apps Hub">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                        </svg>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-header-row">
+                            <span class="module-name">Social Apps Hub</span>
+                            <span class="module-status">Multi-App</span>
+                        </div>
+                        <p class="module-desc">Consolidated multi-app monitoring across Instagram, TikTok, X (Twitter), and YouTube.</p>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="social-apps.html" class="standard-btn">
+                        Open Page
+                        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 5. Phone Calls -->
+            <div class="module-card">
+                <div class="card-top">
+                    <div class="icon-box calls" title="Phone Calls">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56-.35-.12-.74-.03-1.01.24l-2.2 2.2c-2.83-1.44-5.15-3.75-6.59-6.59l2.2-2.21c.28-.26.36-.65.25-1C8.7 6.3 8.5 5.1 8.5 3.87 8.5 3.39 8.11 3 7.63 3H4.07c-.48 0-.87.39-.87.87 0 9.39 7.64 17.03 17.03 17.03.48 0 .87-.39.87-.87v-3.56c0-.48-.39-.87-.87-.87zM15 3v2h3.59l-9.83 9.83 1.41 1.41L20 6.41V10h2V3h-7z"/>
+                        </svg>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-header-row">
+                            <span class="module-name">Call History</span>
+                            <span class="module-status synced">Synced</span>
+                        </div>
+                        <p class="module-desc">Incoming, outgoing, and missed call records with contact names, timestamps, and durations.</p>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="calls.html" class="standard-btn">
+                        Open Page
+                        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 6. Text Messages (SMS) -->
+            <div class="module-card">
+                <div class="card-top">
+                    <div class="icon-box messages" title="Text Messages">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/>
+                        </svg>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-header-row">
+                            <span class="module-name">Messages (SMS)</span>
+                            <span class="module-status synced">Active</span>
+                        </div>
+                        <p class="module-desc">Native device SMS text message threads, contact information, and conversation history.</p>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="messages.html" class="standard-btn">
+                        Open Page
+                        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 7. Deleted Messages -->
+            <div class="module-card">
+                <div class="card-top">
+                    <div class="icon-box deleted" title="Deleted Messages">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                        </svg>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-header-row">
+                            <span class="module-name">Deleted Messages</span>
+                            <span class="module-status live">Recovery</span>
+                        </div>
+                        <p class="module-desc">Forensic recovery logs capturing deleted text chats, purged messages, and unsend alerts.</p>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="deleted-messages.html" class="standard-btn">
+                        Open Page
+                        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 8. Location Tracker -->
+            <div class="module-card">
+                <div class="card-top">
+                    <div class="icon-box location" title="Location Tracker">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                        </svg>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-header-row">
+                            <span class="module-name">Location Tracker</span>
+                            <span class="module-status live">GPS Live</span>
+                        </div>
+                        <p class="module-desc">Real-time GPS mapping, location history timeline, geofence radius alerts, and transit logs.</p>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="location-tracker.html" class="standard-btn">
+                        Open Page
+                        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 9. Live Recording -->
+            <div class="module-card">
+                <div class="card-top">
+                    <div class="icon-box live" title="Live Recording">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm0-12c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4z"/>
+                        </svg>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-header-row">
+                            <span class="module-name">Live Recording</span>
+                            <span class="module-status live">Stream</span>
+                        </div>
+                        <p class="module-desc">Real-time surround microphone listening, front/rear camera feeds, and screen mirroring.</p>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="live-recording.html" class="standard-btn">
+                        Open Page
+                        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 10. Remote Control -->
+            <div class="module-card">
+                <div class="card-top">
+                    <div class="icon-box remote" title="Remote Control">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14zm-4.2-7.8l1.4 1.4-3.2 3.2-1.4-1.4 3.2-3.2zm-.8-4.2c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/>
+                        </svg>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-header-row">
+                            <span class="module-name">Remote Control</span>
+                            <span class="module-status">Commands</span>
+                        </div>
+                        <p class="module-desc">Send remote device commands: screen locking, application blocking, and remote capture.</p>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="remote-control.html" class="standard-btn">
+                        Open Page
+                        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 11. Photo Gallery -->
+            <div class="module-card">
+                <div class="card-top">
+                    <div class="icon-box gallery" title="Photo Gallery">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+                        </svg>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-header-row">
+                            <span class="module-name">Photo Gallery</span>
+                            <span class="module-status synced">Synced</span>
+                        </div>
+                        <p class="module-desc">Camera roll photos, downloaded media, saved albums, screenshots, and video clips.</p>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="gallery.html" class="standard-btn">
+                        Open Page
+                        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 12. Phone Files -->
+            <div class="module-card">
+                <div class="card-top">
+                    <div class="icon-box files" title="Phone Files">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-1 8h-3v3h-2v-3h-3v-2h3V9h2v3h3v2z"/>
+                        </svg>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-header-row">
+                            <span class="module-name">Phone Files</span>
+                            <span class="module-status">Storage</span>
+                        </div>
+                        <p class="module-desc">Internal storage directory browser, downloaded PDFs, APK packages, and documents.</p>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="phone-files.html" class="standard-btn">
+                        Open Page
+                        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 13. Browser History -->
+            <div class="module-card">
+                <div class="card-top">
+                    <div class="icon-box browser" title="Browser History">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                        </svg>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-header-row">
+                            <span class="module-name">Browser History</span>
+                            <span class="module-status synced">Active</span>
+                        </div>
+                        <p class="module-desc">Web browser tracking: visited URLs, search queries, saved bookmarks, and timestamped pages.</p>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="browser-history.html" class="standard-btn">
+                        Open Page
+                        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 14. Data Export -->
+            <div class="module-card">
+                <div class="card-top">
+                    <div class="icon-box export" title="Data Export">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2v9.67z"/>
+                        </svg>
+                    </div>
+                    <div class="card-info">
+                        <div class="card-header-row">
+                            <span class="module-name">Data Export</span>
+                            <span class="module-status">Archive</span>
+                        </div>
+                        <p class="module-desc">Generate compliance reports, full database backups, and downloadable CSV/PDF dossiers.</p>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="data-export.html" class="standard-btn">
+                        Open Page
+                        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                    </a>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="portal-footer">
+        <p>© 2026 Unified Portal Management System • 14 Operational Modules Active</p>
+    </footer>
+
+</body>
+</html>

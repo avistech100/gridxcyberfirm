@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messenger Dashboard</title>
+    <style>
+        /* Base Reset & Variables */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        :root {
+            --primary-blue: #0084ff;
+            --bg-color: #ffffff;
+            --bg-secondary: #f0f2f5;
+            --text-main: #050505;
+            --text-secondary: #65676b;
+            --border-color: #e4e6eb;
+            --hover-bg: #f2f2f2;
+            --online-green: #31a24c;
+            --notification-red: #fa3e3e;
+        }
+
+        body {
+            background-color: var(--bg-secondary);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* Main Container */
+        .app-container {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+            background-color: white;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Sidebar (Chat List) */
+        .sidebar {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background-color: white;
+            position: relative;
+            border-right: 1px solid var(--border-color);
+        }
+
+        /* Top Header */
+        .top-header {
+            background-color: white;
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 60px;
+            z-index: 10;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-left svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--text-main);
+            cursor: pointer;
+        }
+
+        .header-left h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-icon-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--text-main);
+        }
+
+        .header-badge {
+            position: absolute;
+            top: -5px;
+            right: -8px;
+            background-color: var(--notification-red);
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 5px;
+            border-radius: 10px;
+            border: 2px solid white;
+        }
+
+        /* Stories Row */
+        .stories-row {
+            display: flex;
+            overflow-x: auto;
+            padding: 10px 15px;
+            gap: 15px;
+            border-bottom: 1px solid var(--border-color);
+            scrollbar-width: none; /* Firefox */
+        }
+
+        .stories-row::-webkit-scrollbar {
+            display: none; /* Chrome/Safari */
+        }
+
+        .story {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            flex-shrink: 0;
+            width: 65px;
+        }
+
+        .story-avatar-wrapper {
+            position: relative;
+            width: 56px;
+            height: 56px;
+            margin-bottom: 5px;
+        }
+
+        .story-avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid transparent;
+        }
+
+        .story-avatar-wrapper.active .story-avatar {
+            border-color: var(--primary-blue);
+        }
+
+        .story-online-dot {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 14px;
+            height: 14px;
+            background-color: var(--online-green);
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        .story-name {
+            font-size: 12px;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+            text-align: center;
+        }
+
+        /* Chat List Area */
+        .chat-list {
+            flex: 1;
+            overflow-y: auto;
+            background-color: white;
+            padding-bottom: 80px; /* Space for bottom nav */
+        }
+
+        /* Chat Item */
+        .chat-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .chat-item:hover {
+            background-color: var(--hover-bg);
+        }
+
+        /* Avatar with Online Status */
+        .avatar-wrapper {
+            position: relative;
+            width: 56px;
+            height: 56px;
+            flex-shrink: 0;
+        }
+
+        .avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            background-color: #ddd;
+        }
+
+        .online-dot {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 14px;
+            height: 14px;
+            background-color: var(--online-green);
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        /* Chat Details */
+        .chat-details {
+            flex: 1;
+            margin-left: 12px;
+            min-width: 0;
+        }
+
+        .chat-name {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 4px;
+        }
+
+        .chat-name.unread {
+            font-weight: 700;
+        }
+
+        .chat-preview {
+            font-size: 14px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: flex;
+            align-items: center;
+        }
+
+        .chat-preview.unread {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        /* Status Indicators (Right Side) */
+        .chat-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 10px;
+            flex-shrink: 0;
+            width: 24px;
+        }
+
+        .blue-tick {
+            width: 20px;
+            height: 20px;
+            fill: var(--primary-blue);
+        }
+
+        .unread-badge {
+            background-color: var(--notification-red);
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            min-width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0 6px;
+        }
+
+        /* Bottom Navigation (Mobile Only) */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background-color: white;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 20;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
+
+        .nav-item {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+        }
+
+        .nav-item svg {
+            width: 28px;
+            height: 28px;
+            fill: var(--text-secondary);
+        }
+
+        .nav-item.active svg {
+            fill: var(--primary-blue);
+        }
+
+        .nav-badge {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: var(--notification-red);
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 5px;
+            border-radius: 10px;
+            border: 2px solid white;
+        }
+
+        /* Floating Action Button (FAB) */
+        .fab {
+            position: absolute;
+            bottom: 80px; /* Above bottom nav */
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            background-color: var(--primary-blue);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 132, 255, 0.3);
+            cursor: pointer;
+            border: none;
+            transition: transform 0.2s, background-color 0.2s;
+            z-index: 15;
+        }
+
+        .fab:hover {
+            transform: scale(1.05);
+            background-color: #006ce0;
+        }
+
+        .fab svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+
+        
+        .main-content {
+            display: none;
+            flex: 1;
+            background-color: #ffffff;
+            justify-content: center;
+            align-items: center;
+            border-left: 1px solid var(--border-color);
+        }
+
+        .main-content-placeholder {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 20px;
+        }
+
+        .main-content-placeholder h2 {
+            font-weight: 400;
+            margin-bottom: 10px;
+            color: var(--text-main);
+            font-size: 24px;
+        }
+
+        @media (min-width: 1024px) {
+            body {
+                background-color: #f0f2f5;
+            }
+
+            .app-container {
+                width: 100%;
+                height: 100vh;
+                max-width: 1600px;
+                box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            }
+
+            .sidebar {
+                width: 400px;
+                flex-shrink: 0;
+            }
+
+            .main-content {
+                display: flex; /* Show right pane on desktop */
+            }
+
+            /* Hide mobile-specific elements */
+            .bottom-nav {
+                display: none;
+            }
+
+            .chat-list {
+                padding-bottom: 0; /* No bottom nav to account for */
+            }
+
+            .fab {
+                bottom: 20px;
+                right: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+
+        <!-- Sidebar (Chat List) -->
+        <div class="sidebar">
+            <header class="top-header">
+                <div class="header-left">
+                    <!-- Back Arrow -->
+                    <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+                    <h1>Messages</h1>
+                </div>
+                <div class="header-right">
+                    <!-- Settings Gear -->
+                    <button class="header-icon-btn">
+                        <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                        <span class="header-badge">9+</span>
+                    </button>
+                    <!-- Search -->
+                    <button class="header-icon-btn">
+                        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    </button>
+                </div>
+            </header>
+            <div class="stories-row">
+                <div class="story">
+                    <div class="story-avatar-wrapper">
+                        <img class="story-avatar" src="https://i.pravatar.cc/150?img=11" alt="Your note" style="opacity: 0.5;">
+                        <div class="story-online-dot" style="background-color: var(--primary-blue); display: flex; justify-content: center; align-items: center;">
+                            <svg viewBox="0 0 24 24" width="10" height="10" fill="white"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                        </div>
+                    </div>
+                    <span class="story-name">Your note</span>
+                </div>
+                <div class="story">
+                    <div class="story-avatar-wrapper active">
+                        <img class="story-avatar" src="https://i.pravatar.cc/150?img=33" alt="Abefe">
+                        <div class="story-online-dot"></div>
+                    </div>
+                    <span class="story-name">Abefe</span>
+                </div>
+                <div class="story">
+                    <div class="story-avatar-wrapper">
+                        <img class="story-avatar" src="https://i.pravatar.cc/150?img=12" alt="Muham...">
+                        <div class="story-online-dot"></div>
+                    </div>
+                    <span class="story-name">Muham...</span>
+                </div>
+                <div class="story">
+                    <div class="story-avatar-wrapper">
+                        <img class="story-avatar" src="https://i.pravatar.cc/150?img=60" alt="Yusuf">
+                        <div class="story-online-dot"></div>
+                    </div>
+                    <span class="story-name">Yusuf</span>
+                </div>
+                <div class="story">
+                    <div class="story-avatar-wrapper">
+                        <img class="story-avatar" src="https://i.pravatar.cc/150?img=47" alt="Folashade">
+                        <div class="story-online-dot"></div>
+                    </div>
+                    <span class="story-name">Folashade</span>
+                </div>
+                <div class="story">
+                    <div class="story-avatar-wrapper">
+                        <img class="story-avatar" src="https://i.pravatar.cc/150?img=25" alt="Bola">
+                    </div>
+                    <span class="story-name">Bola</span>
+                </div>
+            </div>
+
+            <!-- Chat List -->
+            <div class="chat-list">
+
+                <!-- Chat 1: The Coaches' Lounge -->
+                <div class="chat-item">
+                    <div class="avatar-wrapper">
+                        <img class="avatar" src="https://i.pravatar.cc/150?img=12" alt="Coach">
+                        <div class="online-dot"></div>
+                    </div>
+                    <div class="chat-details">
+                        <div class="chat-name unread">The Coaches' Lounge</div>
+                        <div class="chat-preview unread">Oluwatosin: Students are already join...</div>
+                    </div>
+                    <div class="chat-status">
+                        <div class="unread-badge">1</div>
+                    </div>
+                </div>
+
+                <!-- Chat 2: BOLD AND BUOYANT PARTNERS -->
+                <div class="chat-item">
+                    <div class="avatar-wrapper">
+                        <img class="avatar" src="https://i.pravatar.cc/150?img=33" alt="Partners">
+                    </div>
+                    <div class="chat-details">
+                        <div class="chat-name unread">BOLD AND BUOYANT PARTNERS</div>
+                        <div class="chat-preview unread">+234 810 755 3871: GLORY!! GLO...</div>
+                    </div>
+                    <div class="chat-status">
+                        <div class="unread-badge">1</div>
+                    </div>
+                </div>
+
+                <!-- Chat 3: Test 1 -->
+                <div class="chat-item">
+                    <div class="avatar-wrapper">
+                        <img class="avatar" src="https://i.pravatar.cc/150?img=68" alt="Test">
+                    </div>
+                    <div class="chat-details">
+                        <div class="chat-name">Test 1</div>
+                        <div class="chat-preview">You: 📷 Photo</div>
+                    </div>
+                    <div class="chat-status">
+                        <!-- Blue Tick SVG -->
+                        <svg class="blue-tick" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                    </div>
+                </div>
+
+                <!-- Chat 4: James -->
+                <div class="chat-item">
+                    <div class="avatar-wrapper">
+                        <img class="avatar" src="https://i.pravatar.cc/150?img=11" alt="James">
+                        <div class="online-dot"></div>
+                    </div>
+                    <div class="chat-details">
+                        <div class="chat-name">James</div>
+                        <div class="chat-preview">Lol... I dey rich and loaded right now o</div>
+                    </div>
+                    <div class="chat-status">
+                        <svg class="blue-tick" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                    </div>
+                </div>
+
+                <!-- Chat 5: Pastor Joy -->
+                <div class="chat-item">
+                    <div class="avatar-wrapper">
+                        <img class="avatar" src="https://i.pravatar.cc/150?img=47" alt="Pastor Joy">
+                    </div>
+                    <div class="chat-details">
+                        <div class="chat-name">Pastor Joy</div>
+                        <div class="chat-preview">Good Morning Esteemed Pastor Ma I...</div>
+                    </div>
+                    <div class="chat-status">
+                        <svg class="blue-tick" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                    </div>
+                </div>
+
+                <!-- Chat 6: Vincent -->
+                <div class="chat-item">
+                    <div class="avatar-wrapper">
+                        <img class="avatar" src="https://i.pravatar.cc/150?img=60" alt="Vincent">
+                    </div>
+                    <div class="chat-details">
+                        <div class="chat-name">Vincent - Med Lab - Unijos</div>
+                        <div class="chat-preview">Good Morning Highly Esteemed Sir</div>
+                    </div>
+                    <div class="chat-status">
+                        <svg class="blue-tick" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                    </div>
+                </div>
+
+                <!-- Chat 7: H. E. Pst. Success -->
+                <div class="chat-item">
+                    <div class="avatar-wrapper">
+                        <img class="avatar" src="https://i.pravatar.cc/150?img=15" alt="Success">
+                        <div class="online-dot"></div>
+                    </div>
+                    <div class="chat-details">
+                        <div class="chat-name">H. E. Pst. Success</div>
+                        <div class="chat-preview">Good Morning Highly Esteemed Zonal...</div>
+                    </div>
+                    <div class="chat-status">
+                        <svg class="blue-tick" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                    </div>
+                </div>
+
+                <!-- Chat 8: DYNAMIC CHURCH -->
+                <div class="chat-item">
+                    <div class="avatar-wrapper">
+                        <img class="avatar" src="https://i.pravatar.cc/150?img=25" alt="Church">
+                    </div>
+                    <div class="chat-details">
+                        <div class="chat-name">DYNAMIC CHURCH</div>
+                        <div class="chat-preview">Bro. Alex: 📷 Rhapsody Of Realities Tee...</div>
+                    </div>
+                    <div class="chat-status">
+                        <!-- No tick for group chat preview -->
+                    </div>
+                </div>
+
+                <!-- Chat 9: Bro. Alex - BLW -->
+                <div class="chat-item">
+                    <div class="avatar-wrapper">
+                        <img class="avatar" src="https://i.pravatar.cc/150?img=53" alt="Bro Alex">
+                    </div>
+                    <div class="chat-details">
+                        <div class="chat-name">Bro. Alex - BLW</div>
+                        <div class="chat-preview">Good Evening Sir Kindly find the atte...</div>
+                    </div>
+                    <div class="chat-status">
+                        <svg class="blue-tick" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Bottom Navigation (Mobile) -->
+            <nav class="bottom-nav">
+                <div class="nav-item">
+                    <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                    <span class="nav-badge">15+</span>
+                </div>
+                <div class="nav-item">
+                    <!-- People Icon -->
+                    <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                    <span class="nav-badge">1</span>
+                </div>
+                <div class="nav-item active">
+                    <!-- Messenger Icon -->
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.14 2 11.25c0 2.91 1.45 5.51 3.74 7.22V22l3.3-1.8c.93.26 1.92.4 2.96.4 5.52 0 10-4.14 10-9.25S17.52 2 12 2zm1.03 12.36l-2.55-2.72-4.98 2.72L11.1 8.7l2.6 2.72 4.93-2.72-5.6 5.66z"/></svg>
+                </div>
+                <div class="nav-item">
+                    <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+                </div>
+                <div class="nav-item">
+                    <!-- Video Icon -->
+                    <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+                </div>
+            </nav>
+
+            <!-- Floating Action Button (FAB) -->
+            <button class="fab">
+                <!-- Plus Icon -->
+                <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            </button>
+
+        </div>
+
+        <!-- Right Pane for Desktop View -->
+        <div class="main-content">
+            <div class="main-content-placeholder">
+                <svg viewBox="0 0 24 24" width="80" height="80" fill="#0084ff" style="margin-bottom: 20px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                <h2>Messenger</h2>
+                <p>Select a chat to start messaging</p>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

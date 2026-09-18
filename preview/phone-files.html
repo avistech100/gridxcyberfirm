@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Samsung My Files</title>
+    <style>
+        /* Base Reset & Variables */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'SamsungOne', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        :root {
+            --bg-main: #f2f4f6; /* Samsung One UI light background */
+            --bg-card: #ffffff;
+            --bg-hover: #e9ecef;
+            --text-main: #1a1a1a;
+            --text-secondary: #6c757d;
+            --text-tertiary: #adb5bd;
+            --border-color: #e9ecef;
+            --accent-blue: #007aff; /* Samsung Blue */
+            --accent-green: #34c759;
+            --accent-orange: #ff9500;
+            --accent-red: #ff3b30;
+            --accent-purple: #af52de;
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.02);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
+            --radius-lg: 24px;
+            --radius-md: 16px;
+            --radius-sm: 12px;
+        }
+
+        body {
+            background-color: #e5e7eb;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            color: var(--text-main);
+        }
+
+        /* App Container */
+        .app-container {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+            background-color: var(--bg-main);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Sidebar (Desktop Only) */
+        .sidebar {
+            display: none;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            padding: 20px 25px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--bg-main);
+            z-index: 5;
+        }
+
+        .top-bar h1 {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.5px;
+        }
+
+        .top-bar-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .icon-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background-color: transparent;
+            border: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .icon-btn:hover {
+            background-color: var(--bg-hover);
+        }
+
+        .icon-btn svg {
+            width: 22px;
+            height: 22px;
+            fill: var(--text-main);
+        }
+
+        /* Scrollable Content */
+        .content-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 25px 100px 25px; /* Bottom padding for mobile nav */
+            scrollbar-width: none;
+        }
+
+        .content-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Storage Overview Card */
+        .storage-card {
+            background-color: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .storage-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .storage-header h2 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .storage-header span {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .storage-bar-container {
+            width: 100%;
+            height: 10px;
+            background-color: var(--bg-hover);
+            border-radius: 5px;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .storage-segment {
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .storage-segment.images { background-color: var(--accent-blue); }
+        .storage-segment.videos { background-color: var(--accent-red); }
+        .storage-segment.audio { background-color: var(--accent-purple); }
+        .storage-segment.docs { background-color: var(--accent-green); }
+        .storage-segment.other { background-color: var(--accent-orange); }
+
+        .storage-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .legend-dot.images { background-color: var(--accent-blue); }
+        .legend-dot.videos { background-color: var(--accent-red); }
+        .legend-dot.audio { background-color: var(--accent-purple); }
+        .legend-dot.docs { background-color: var(--accent-green); }
+        .legend-dot.other { background-color: var(--accent-orange); }
+
+        /* Category Grid */
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .category-item {
+            background-color: var(--bg-card);
+            border-radius: var(--radius-md);
+            padding: 18px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .category-item:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .category-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .category-icon svg {
+            width: 22px;
+            height: 22px;
+            fill: white;
+        }
+
+        .category-icon.images { background-color: var(--accent-blue); }
+        .category-icon.videos { background-color: var(--accent-red); }
+        .category-icon.audio { background-color: var(--accent-purple); }
+        .category-icon.docs { background-color: var(--accent-green); }
+        .category-icon.downloads { background-color: var(--accent-orange); }
+        .category-icon.apps { background-color: #4285f4; }
+        .category-icon.recent { background-color: #9aa0a6; }
+        .category-icon.cloud { background-color: #00ac47; }
+
+        .category-name {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-main);
+            text-align: center;
+        }
+
+        /* Recent Files List */
+        .list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 0 5px;
+        }
+
+        .list-header h2 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.3px;
+        }
+
+        .list-header span {
+            font-size: 13px;
+            color: var(--accent-blue);
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .file-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* File Item */
+        .file-item {
+            background-color: var(--bg-card);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow 0.2s, transform 0.1s;
+            cursor: pointer;
+        }
+
+        .file-item:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .file-item:active {
+            transform: scale(0.99);
+        }
+
+        .file-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .file-icon svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+
+        .file-icon.image { background-color: var(--accent-blue); }
+        .file-icon.video { background-color: var(--accent-red); }
+        .file-icon.audio { background-color: var(--accent-purple); }
+        .file-icon.doc { background-color: var(--accent-green); }
+        .file-icon.pdf { background-color: #ea4335; }
+        .file-icon.zip { background-color: var(--accent-orange); }
+
+        .file-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .file-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .file-meta {
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .file-size {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+            margin-right: 5px;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 5px;
+            margin-left: 5px;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.2s;
+        }
+
+        .action-btn:hover {
+            background-color: var(--bg-hover);
+        }
+
+        .action-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: var(--text-secondary);
+        }
+
+        /* Bottom Navigation (Mobile - One UI Style) */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 75px;
+            background-color: var(--bg-card);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 20;
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.03);
+            padding-bottom: 10px; /* Space for gesture bar */
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 8px;
+            width: 70px;
+            border-radius: var(--radius-sm);
+            transition: background-color 0.2s;
+            position: relative;
+        }
+
+        .nav-btn:hover {
+            background-color: var(--bg-hover);
+        }
+
+        .nav-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--text-tertiary);
+            transition: fill 0.2s;
+        }
+
+        .nav-btn.active svg {
+            fill: var(--accent-blue);
+        }
+
+        .nav-btn span {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-tertiary);
+        }
+
+        .nav-btn.active span {
+            color: var(--accent-blue);
+        }
+
+        /* Active Dot Indicator */
+        .nav-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0px;
+            width: 4px;
+            height: 4px;
+            background-color: var(--accent-blue);
+            border-radius: 50%;
+        }
+
+        @media (min-width: 1024px) {
+            body {
+                background-color: #e5e7eb;
+            }
+
+            .app-container {
+                width: 100%;
+                height: 100vh;
+                max-width: 1600px;
+                box-shadow: 0 0 30px rgba(0,0,0,0.1);
+                flex-direction: row;
+                border-radius: 0;
+            }
+
+            /* Show Desktop Sidebar */
+            .sidebar {
+                display: flex;
+                width: 260px;
+                background-color: var(--bg-card);
+                border-right: 1px solid var(--border-color);
+                flex-direction: column;
+                padding: 24px 0;
+                flex-shrink: 0;
+                z-index: 30;
+            }
+
+            .sidebar-logo {
+                padding: 0 24px 24px;
+                font-size: 20px;
+                font-weight: 700;
+                color: var(--accent-blue);
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                letter-spacing: -0.5px;
+            }
+
+            .sidebar-logo svg {
+                width: 24px;
+                height: 24px;
+                fill: var(--accent-blue);
+            }
+
+            .sidebar-nav {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                padding: 0 12px;
+                flex: 1;
+            }
+
+            .nav-item {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                padding: 14px 16px;
+                border-radius: var(--radius-sm);
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: 500;
+                color: var(--text-secondary);
+                transition: background-color 0.2s, color 0.2s;
+            }
+
+            .nav-item:hover {
+                background-color: var(--bg-hover);
+                color: var(--text-main);
+            }
+
+            .nav-item.active {
+                background-color: #e6f0ff;
+                color: var(--accent-blue);
+            }
+
+            .nav-item svg {
+                width: 20px;
+                height: 20px;
+                fill: currentColor;
+            }
+
+            /* Adjust Main Content Layout */
+            .main-content {
+                flex-direction: row;
+            }
+
+            .content-scroll {
+                padding: 30px 50px;
+            }
+
+            /* Hide Mobile Bottom Nav */
+            .bottom-nav {
+                display: none;
+            }
+
+            /* Grid Layout for Category */
+            .category-grid {
+                grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+                gap: 20px;
+            }
+
+            /* Grid Layout for Files */
+            .file-list {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+                gap: 15px;
+            }
+
+            .top-bar {
+                padding: 30px 50px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+
+        <!-- Sidebar (Desktop Only) -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <!-- Folder Icon -->
+                <svg viewBox="0 0 24 24"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+                My Files
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-item active">
+                    <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                    Home
+                </div>
+                <div class="nav-item">
+                    <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+                    Recent
+                </div>
+                <div class="nav-item">
+                    <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                    Downloads
+                </div>
+                <div class="nav-item">
+                    <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>
+                    Cloud
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+
+            <!-- Top Bar -->
+            <header class="top-bar">
+                <h1>My Files</h1>
+                <div class="top-bar-actions">
+                    <button class="icon-btn">
+                        <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    </button>
+                    <button class="icon-btn">
+                        <!-- More Icon -->
+                        <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Scrollable Content -->
+            <div class="content-scroll">
+
+                <!-- Storage Overview Card -->
+                <div class="storage-card">
+                    <div class="storage-header">
+                        <h2>Internal Storage</h2>
+                        <span>64 GB of 128 GB used</span>
+                    </div>
+                    <div class="storage-bar-container">
+                        <div class="storage-segment images" style="width: 25%;"></div>
+                        <div class="storage-segment videos" style="width: 15%;"></div>
+                        <div class="storage-segment audio" style="width: 10%;"></div>
+                        <div class="storage-segment docs" style="width: 8%;"></div>
+                        <div class="storage-segment other" style="width: 5%;"></div>
+                    </div>
+                    <div class="storage-legend">
+                        <div class="legend-item"><div class="legend-dot images"></div> Images</div>
+                        <div class="legend-item"><div class="legend-dot videos"></div> Videos</div>
+                        <div class="legend-item"><div class="legend-dot audio"></div> Audio</div>
+                        <div class="legend-item"><div class="legend-dot docs"></div> Docs</div>
+                        <div class="legend-item"><div class="legend-dot other"></div> Other</div>
+                    </div>
+                </div>
+
+                <!-- Category Grid -->
+                <div class="category-grid">
+                    <div class="category-item">
+                        <div class="category-icon images">
+                            <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                        </div>
+                        <span class="category-name">Images</span>
+                    </div>
+                    <div class="category-item">
+                        <div class="category-icon videos">
+                            <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+                        </div>
+                        <span class="category-name">Videos</span>
+                    </div>
+                    <div class="category-item">
+                        <div class="category-icon audio">
+                            <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                        </div>
+                        <span class="category-name">Audio</span>
+                    </div>
+                    <div class="category-item">
+                        <div class="category-icon docs">
+                            <svg viewBox="0 0 24 24"><path d="M6 2c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6H6zm7 7V3.5L18.5 9H13z"/></svg>
+                        </div>
+                        <span class="category-name">Docs</span>
+                    </div>
+                    <div class="category-item">
+                        <div class="category-icon downloads">
+                            <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                        </div>
+                        <span class="category-name">Downloads</span>
+                    </div>
+                    <div class="category-item">
+                        <div class="category-icon apps">
+                            <svg viewBox="0 0 24 24"><path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/></svg>
+                        </div>
+                        <span class="category-name">Apps</span>
+                    </div>
+                    <div class="category-item">
+                        <div class="category-icon recent">
+                            <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+                        </div>
+                        <span class="category-name">Recent</span>
+                    </div>
+                    <div class="category-item">
+                        <div class="category-icon cloud">
+                            <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>
+                        </div>
+                        <span class="category-name">Cloud</span>
+                    </div>
+                </div>
+
+                <!-- Recent Files List -->
+                <div class="list-header">
+                    <h2>Recent Files</h2>
+                    <span>See All</span>
+                </div>
+
+                <div class="file-list">
+
+                    <!-- File 1: Image -->
+                    <div class="file-item">
+                        <div class="file-icon image">
+                            <svg viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+                        </div>
+                        <div class="file-details">
+                            <div class="file-name">Vacation_Photo_2024.jpg</div>
+                            <div class="file-meta">
+                                <span>Today, 10:30 AM</span>
+                            </div>
+                        </div>
+                        <div class="file-size">4.2 MB</div>
+                        <div class="file-actions">
+                            <button class="action-btn">
+                                <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- File 2: Video -->
+                    <div class="file-item">
+                        <div class="file-icon video">
+                            <svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg>
+                        </div>
+                        <div class="file-details">
+                            <div class="file-name">Project_Presentation.mp4</div>
+                            <div class="file-meta">
+                                <span>Yesterday, 3:15 PM</span>
+                            </div>
+                        </div>
+                        <div class="file-size">125 MB</div>
+                        <div class="file-actions">
+                            <button class="action-btn">
+                                <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- File 3: Document -->
+                    <div class="file-item">
+                        <div class="file-icon doc">
+                            <svg viewBox="0 0 24 24"><path d="M6 2c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6H6zm7 7V3.5L18.5 9H13z"/></svg>
+                        </div>
+                        <div class="file-details">
+                            <div class="file-name">Meeting_Notes.docx</div>
+                            <div class="file-meta">
+                                <span>Mar 14, 9:00 AM</span>
+                            </div>
+                        </div>
+                        <div class="file-size">256 KB</div>
+                        <div class="file-actions">
+                            <button class="action-btn">
+                                <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- File 4: PDF -->
+                    <div class="file-item">
+                        <div class="file-icon pdf">
+                            <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12zM8 9h2v2H8zm0-3h2v2H8zm3 3h2v2h-2zm0-3h2v2h-2zm3 3h2v2h-2zm0-3h2v2h-2z"/></svg>
+                        </div>
+                        <div class="file-details">
+                            <div class="file-name">Invoice_2024_03.pdf</div>
+                            <div class="file-meta">
+                                <span>Mar 10, 2:20 PM</span>
+                            </div>
+                        </div>
+                        <div class="file-size">1.1 MB</div>
+                        <div class="file-actions">
+                            <button class="action-btn">
+                                <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- File 5: Audio -->
+                    <div class="file-item">
+                        <div class="file-icon audio">
+                            <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                        </div>
+                        <div class="file-details">
+                            <div class="file-name">Podcast_Episode_42.mp3</div>
+                            <div class="file-meta">
+                                <span>Mar 08, 11:45 AM</span>
+                            </div>
+                        </div>
+                        <div class="file-size">45 MB</div>
+                        <div class="file-actions">
+                            <button class="action-btn">
+                                <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- File 6: Zip -->
+                    <div class="file-item">
+                        <div class="file-icon zip">
+                            <svg viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-2 6h-2v2h2v2h-2v2h-2v-2h2v-2h-2v-2h2v-2h-2V8h2v2h2v2z"/></svg>
+                        </div>
+                        <div class="file-details">
+                            <div class="file-name">Project_Assets.zip</div>
+                            <div class="file-meta">
+                                <span>Mar 05, 4:00 PM</span>
+                            </div>
+                        </div>
+                        <div class="file-size">320 MB</div>
+                        <div class="file-actions">
+                            <button class="action-btn">
+                                <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Bottom Navigation (Mobile - One UI Style) -->
+            <nav class="bottom-nav">
+                <button class="nav-btn active">
+                    <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                    <span>Home</span>
+                </button>
+                <button class="nav-btn">
+                    <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+                    <span>Recent</span>
+                </button>
+                <button class="nav-btn">
+                    <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                    <span>Downloads</span>
+                </button>
+                <button class="nav-btn">
+                    <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>
+                    <span>Cloud</span>
+                </button>
+            </nav>
+
+        </main>
+
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Dashboard</title>
+    <style>
+        /* Base Reset & Variables */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        :root {
+            --primary-green: #008069;
+            --dark-green: #00a884;
+            --light-green: #25d366;
+            --bg-color: #f0f2f5;
+            --text-main: #111b21;
+            --text-secondary: #667781;
+            --border-color: #e9edef;
+            --hover-bg: #f5f6f6;
+            --unread-badge: #25d366;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* Main Container */
+        .app-container {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+            background-color: white;
+            overflow: hidden;
+        }
+
+        /* Sidebar (Chat List) */
+        .sidebar {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background-color: white;
+            position: relative;
+            border-right: 1px solid var(--border-color);
+        }
+
+        /* Header */
+        .app-header {
+            background-color: var(--primary-green);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 60px;
+        }
+
+        .app-header h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .header-icons {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .header-icons svg {
+            width: 22px;
+            height: 22px;
+            fill: white;
+            cursor: pointer;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            background-color: var(--primary-green);
+            padding: 0 10px;
+            height: 48px;
+            align-items: flex-end;
+        }
+
+        .tab {
+            flex: 1;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            font-weight: 600;
+            padding-bottom: 12px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .tab.active {
+            color: white;
+            border-bottom: 3px solid white;
+        }
+
+        .tab-badge {
+            background-color: var(--light-green);
+            color: white;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 5px;
+            vertical-align: middle;
+        }
+
+        /* Chat List Area */
+        .chat-list {
+            flex: 1;
+            overflow-y: auto;
+            background-color: white;
+        }
+
+        /* Chat Item Base */
+        .chat-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .chat-item:hover {
+            background-color: var(--hover-bg);
+        }
+
+        /* Avatar */
+        .avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+            background-color: #ddd;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        /* Archived Row Special Style */
+        .archived-row {
+            justify-content: space-between;
+            padding: 15px 20px;
+        }
+
+        .archived-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        .archived-count {
+            color: var(--light-green);
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        /* Chat Details */
+        .chat-details {
+            flex: 1;
+            margin-left: 15px;
+            min-width: 0; /* Important for text truncation */
+        }
+
+        .chat-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .chat-name {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-time {
+            font-size: 12px;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+            margin-left: 10px;
+        }
+
+        .chat-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-preview {
+            font-size: 14px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .chat-preview svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        .tick-blue {
+            fill: #53bdeb;
+        }
+
+        .tick-grey {
+            fill: var(--text-secondary);
+        }
+
+        /* Unread Badge */
+        .unread-badge {
+            background-color: var(--unread-badge);
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            min-width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0 6px;
+            flex-shrink: 0;
+            margin-left: 10px;
+        }
+
+        /* Floating Action Button (FAB) */
+        .fab {
+            position: absolute;
+            bottom: 25px;
+            right: 25px;
+            width: 56px;
+            height: 56px;
+            background-color: var(--dark-green);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            border: none;
+            transition: transform 0.2s;
+            z-index: 10;
+        }
+
+        .fab:hover {
+            transform: scale(1.05);
+        }
+
+        .fab svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+
+        
+        .main-content {
+            display: none;
+            flex: 1;
+            background-color: var(--bg-color);
+            justify-content: center;
+            align-items: center;
+            border-bottom: 6px solid var(--dark-green);
+        }
+
+        .main-content-placeholder {
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .main-content-placeholder h2 {
+            font-weight: 300;
+            margin-bottom: 10px;
+            color: #41525d;
+        }
+
+        .main-content-placeholder p {
+            font-size: 14px;
+        }
+
+        @media (min-width: 1024px) {
+            body {
+                background-color: #d1d7db; /* Classic WhatsApp Web background */
+            }
+
+            .app-container {
+                width: 100%;
+                height: 100vh;
+                max-width: 1600px;
+                box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            }
+
+            .sidebar {
+                width: 400px;
+                flex-shrink: 0;
+            }
+
+            .main-content {
+                display: flex; /* Show right pane on desktop */
+            }
+            .fab {
+                bottom: 20px;
+                right: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+
+        <!-- Sidebar (Chat List) -->
+        <div class="sidebar">
+
+            <!-- Header -->
+            <header class="app-header">
+                <h1>WhatsApp</h1>
+                <div class="header-icons">
+                    <svg viewBox="0 0 24 24"><path d="M12 9c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm7-9h-2.17l-1.24-1.35c-.37-.4-.9-.65-1.47-.65H9.88c-.57 0-1.1.25-1.47.65L7.17 6H5c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H5V8h2.88l1.8-2h4.64l1.8 2H19v10z"/></svg>
+                    <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                    <svg viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                </div>
+            </header>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <div class="tab active">CHATS <span class="tab-badge">2</span></div>
+                <div class="tab">STATUS</div>
+                <div class="tab">CALLS</div>
+            </div>
+
+            <!-- Chat List -->
+            <div class="chat-list">
+
+                <!-- Archived Row -->
+                <div class="chat-item archived-row">
+                    <div class="archived-left">
+                        <svg viewBox="0 0 24 24" width="24" height="24" fill="#00a884"><path d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM12 17.5L6.5 12H10v-2h4v2h3.5L12 17.5zM5.12 5l.81-1h12l.94 1H5.12z"/></svg>
+                        <span>Archived</span>
+                    </div>
+                    <div class="archived-count">24</div>
+                </div>
+
+                <!-- Chat 1: The Coaches' Lounge -->
+                <div class="chat-item">
+                    <div class="avatar" style="background-color: #f0f2f5; color: #000;">
+                        <img src="https://i.pravatar.cc/150?img=12" alt="Coach" style="width:100%; height:100%; border-radius:50%;">
+                    </div>
+                    <div class="chat-details">
+                        <div class="chat-top">
+                            <span class="chat-name">The Coaches' Lounge</span>
+                            <span class="chat-time">11:36</span>
+                        </div>
+                        <div class="chat-bottom">
+                            <span class="chat-preview">Oluwatosin: Students are already join...</span>
+                            <span class="unread-badge">1</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat 2: BOLD AND BUOYANT PARTNERS -->
+                <div class="chat-item">
+                    <div class="avatar" style="background-color: #f0f2f5; color: #000;">
+                        <img src="https://i.pravatar.cc/150?img=33" alt="Partners" style="width:100%; height:100%; border-radius:50%;">
+                    </div>
+                    <div class="chat-details">
+                        <div class="chat-top">
+                            <span class="chat-name">BOLD AND BUOYANT PARTNERS</span>
+                            <span class="chat-time">11:33</span>
+                        </div>
+                        <div class="chat-bottom">
+                            <span class="chat-preview">+234 810 755 3871: GLORY!! GLO...</span>
+                            <span class="unread-badge">1</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat 3: Test 1 -->
+                <div class="chat-item">
+                    <div class="avatar" style="background-color: #f0f2f5; color: #000;">
+                        <img src="https://i.pravatar.cc/150?img=68" alt="Test" style="width:100%; height:100%; border-radius:50%;">
+                    </div>
+                    <div class="chat-details">
+                        <div class="chat-top">
+                            <span class="chat-name">Test 1</span>
+                            <span class="chat-time">11:06</span>
+                        </div>
+                        <div class="chat-bottom">
+                            <span class="chat-preview">
+                                <svg class="tick-blue" viewBox="0 0 16 15" width="16" height="15"><path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.319.319 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.361.125.484-.033l6.272-8.048a.366.366 0 0 0-.064-.512zm-4.1 0l-.478-.372a.365.365 0 0 0-.51.063L4.566 9.879a.32.32 0 0 1-.484.033L1.891 7.769a.366.366 0 0 0-.515.006l-.423.433a.364.364 0 0 0 .006.514l3.258 3.185c.143.14.361.125.484-.033l6.272-8.048a.365.365 0 0 0-.063-.51z"/></svg>
+                                You: 📷 Photo
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat 4: James -->
+                <div class="chat-item">
+                    <div class="avatar" style="background-color: #f0f2f5; color: #000;">
+                        <img src="https://i.pravatar.cc/150?img=11" alt="James" style="width:100%; height:100%; border-radius:50%;">
+                    </div>
+                    <div class="chat-details">
+                        <div class="chat-top">
+                            <span class="chat-name">James</span>
+                            <span class="chat-time">10:44</span>
+                        </div>
+                        <div class="chat-bottom">
+                            <span class="chat-preview">
+                                <svg class="tick-blue" viewBox="0 0 16 15" width="16" height="15"><path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.319.319 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.361.125.484-.033l6.272-8.048a.366.366 0 0 0-.064-.512zm-4.1 0l-.478-.372a.365.365 0 0 0-.51.063L4.566 9.879a.32.32 0 0 1-.484.033L1.891 7.769a.366.366 0 0 0-.515.006l-.423.433a.364.364 0 0 0 .006.514l3.258 3.185c.143.14.361.125.484-.033l6.272-8.048a.365.365 0 0 0-.063-.51z"/></svg>
+                                Lol... I dey rich and loaded right now o
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat 5: Pastor Joy -->
+                <div class="chat-item">
+                    <div class="avatar" style="background-color: #f0f2f5; color: #000;">
+                        <img src="https://i.pravatar.cc/150?img=47" alt="Pastor Joy" style="width:100%; height:100%; border-radius:50%;">
+                    </div>
+                    <div class="chat-details">
+                        <div class="chat-top">
+                            <span class="chat-name">Pastor Joy</span>
+                            <span class="chat-time">09:56</span>
+                        </div>
+                        <div class="chat-bottom">
+                            <span class="chat-preview">
+                                <svg class="tick-blue" viewBox="0 0 16 15" width="16" height="15"><path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.319.319 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.361.125.484-.033l6.272-8.048a.366.366 0 0 0-.064-.512zm-4.1 0l-.478-.372a.365.365 0 0 0-.51.063L4.566 9.879a.32.32 0 0 1-.484.033L1.891 7.769a.366.366 0 0 0-.515.006l-.423.433a.364.364 0 0 0 .006.514l3.258 3.185c.143.14.361.125.484-.033l6.272-8.048a.365.365 0 0 0-.063-.51z"/></svg>
+                                Good Morning Esteemed Pastor Ma I...
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat 6: Vincent -->
+                <div class="chat-item">
+                    <div class="avatar" style="background-color: #f0f2f5; color: #000;">
+                        <img src="https://i.pravatar.cc/150?img=60" alt="Vincent" style="width:100%; height:100%; border-radius:50%;">
+                    </div>
+                    <div class="chat-details">
+                        <div class="chat-top">
+                            <span class="chat-name">Vincent - Med Lab - Unijos</span>
+                            <span class="chat-time">08:21</span>
+                        </div>
+                        <div class="chat-bottom">
+                            <span class="chat-preview">
+                                <svg class="tick-blue" viewBox="0 0 16 15" width="16" height="15"><path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.319.319 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.361.125.484-.033l6.272-8.048a.366.366 0 0 0-.064-.512zm-4.1 0l-.478-.372a.365.365 0 0 0-.51.063L4.566 9.879a.32.32 0 0 1-.484.033L1.891 7.769a.366.366 0 0 0-.515.006l-.423.433a.364.364 0 0 0 .006.514l3.258 3.185c.143.14.361.125.484-.033l6.272-8.048a.365.365 0 0 0-.063-.51z"/></svg>
+                                Good Morning Highly Esteemed Sir
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat 7: H. E. Pst. Success -->
+                <div class="chat-item">
+                    <div class="avatar" style="background-color: #f0f2f5; color: #000;">
+                        <img src="https://i.pravatar.cc/150?img=15" alt="Success" style="width:100%; height:100%; border-radius:50%;">
+                    </div>
+                    <div class="chat-details">
+                        <div class="chat-top">
+                            <span class="chat-name">H. E. Pst. Success</span>
+                            <span class="chat-time">08:20</span>
+                        </div>
+                        <div class="chat-bottom">
+                            <span class="chat-preview">
+                                <svg class="tick-blue" viewBox="0 0 16 15" width="16" height="15"><path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.319.319 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.361.125.484-.033l6.272-8.048a.366.366 0 0 0-.064-.512zm-4.1 0l-.478-.372a.365.365 0 0 0-.51.063L4.566 9.879a.32.32 0 0 1-.484.033L1.891 7.769a.366.366 0 0 0-.515.006l-.423.433a.364.364 0 0 0 .006.514l3.258 3.185c.143.14.361.125.484-.033l6.272-8.048a.365.365 0 0 0-.063-.51z"/></svg>
+                                Good Morning Highly Esteemed Zonal...
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat 8: DYNAMIC CHURCH -->
+                <div class="chat-item">
+                    <div class="avatar" style="background-color: #f0f2f5; color: #000;">
+                        <img src="https://i.pravatar.cc/150?img=25" alt="Church" style="width:100%; height:100%; border-radius:50%;">
+                    </div>
+                    <div class="chat-details">
+                        <div class="chat-top">
+                            <span class="chat-name">DYNAMIC CHURCH</span>
+                            <span class="chat-time">07:45</span>
+                        </div>
+                        <div class="chat-bottom">
+                            <span class="chat-preview">
+                                Bro. Alex: 📷 <svg class="tick-blue" viewBox="0 0 16 15" width="16" height="15" style="margin-left:2px;"><path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.319.319 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.361.125.484-.033l6.272-8.048a.366.366 0 0 0-.064-.512zm-4.1 0l-.478-.372a.365.365 0 0 0-.51.063L4.566 9.879a.32.32 0 0 1-.484.033L1.891 7.769a.366.366 0 0 0-.515.006l-.423.433a.364.364 0 0 0 .006.514l3.258 3.185c.143.14.361.125.484-.033l6.272-8.048a.365.365 0 0 0-.063-.51z"/></svg> Rhapsody Of Realities Tee...
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat 9: Bro. Alex - BLW -->
+                <div class="chat-item">
+                    <div class="avatar" style="background-color: #f0f2f5; color: #000;">
+                        <img src="https://i.pravatar.cc/150?img=53" alt="Bro Alex" style="width:100%; height:100%; border-radius:50%;">
+                    </div>
+                    <div class="chat-details">
+                        <div class="chat-top">
+                            <span class="chat-name">Bro. Alex - BLW</span>
+                            <span class="chat-time"></span>
+                        </div>
+                        <div class="chat-bottom">
+                            <span class="chat-preview">
+                                <svg class="tick-blue" viewBox="0 0 16 15" width="16" height="15"><path d="M15.01 3.316l-.478-.372a.365.365 0 0 0-.51.063L8.666 9.879a.32.32 0 0 1-.484.033l-.358-.325a.319.319 0 0 0-.484.032l-.378.483a.418.418 0 0 0 .036.541l1.32 1.266c.143.14.361.125.484-.033l6.272-8.048a.366.366 0 0 0-.064-.512zm-4.1 0l-.478-.372a.365.365 0 0 0-.51.063L4.566 9.879a.32.32 0 0 1-.484.033L1.891 7.769a.366.366 0 0 0-.515.006l-.423.433a.364.364 0 0 0 .006.514l3.258 3.185c.143.14.361.125.484-.033l6.272-8.048a.365.365 0 0 0-.063-.51z"/></svg>
+                                Good Evening Sir Kindly find the atte...
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Floating Action Button (FAB) -->
+            <button class="fab">
+                <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12zM7 9h10v2H7zm0-3h10v2H7z"/></svg>
+            </button>
+
+        </div>
+
+        <!-- Right Pane for Desktop View -->
+        <div class="main-content">
+            <div class="main-content-placeholder">
+                <h2>WhatsApp Web</h2>
+                <p>Send and receive messages without keeping your phone online.</p>
+                <p style="margin-top: 10px; font-size: 12px;">Select a chat to start messaging</p>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Video Recorder</title>
+    <style>
+        /* Base Reset & Variables */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        :root {
+            --bg-main: #000000;
+            --bg-card: #121212;
+            --text-main: #ffffff;
+            --text-secondary: #a0a0a0;
+            --accent-red: #ff3b30;
+            --accent-blue: #0a84ff;
+            --accent-green: #30d158;
+            --border-color: #2c2c2c;
+        }
+
+        body {
+            background-color: #000000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            color: var(--text-main);
+        }
+
+        /* Main App Container */
+        .app-container {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+            background-color: var(--bg-main);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .viewfinder-container {
+            flex: 1;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-color: #1a1a1a;
+        }
+
+        /* Camera Feed Placeholder */
+        .camera-feed {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 1;
+        }
+
+        /* Dark Gradient Overlay for readability */
+        .viewfinder-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.6) 100%);
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* Top Controls */
+        .top-controls {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .top-controls > * {
+            pointer-events: auto;
+        }
+
+        .icon-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: rgba(0, 0, 0, 0.5);
+            border: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+            transition: background-color 0.2s;
+        }
+
+        .icon-btn:hover {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        .icon-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
+        }
+
+        /* Timer & Live Indicator Container */
+        .timer-container {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            color: white;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        /* Small Live Red Button (Top right of timer div) */
+        .live-indicator {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 10px;
+            height: 10px;
+            background-color: var(--accent-red);
+            border-radius: 50%;
+            border: 2px solid #000;
+            box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.7);
+            animation: blink-live 1.5s infinite;
+            cursor: pointer;
+        }
+
+        @keyframes blink-live {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 6px rgba(255, 59, 48, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(255, 59, 48, 0);
+            }
+        }
+
+        /* Side Controls (Right) */
+        .side-controls {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            z-index: 10;
+            pointer-events: auto;
+        }
+
+        .side-controls .icon-btn {
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        /* Bottom Controls */
+        .bottom-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 30px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+            pointer-events: auto;
+        }
+
+        /* Gallery Preview Button (Bottom Left) */
+        .gallery-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            border: 2px solid white;
+            overflow: hidden;
+            cursor: pointer;
+            background-color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .gallery-btn img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Record Button (Center) */
+        .record-btn-wrapper {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .record-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: transparent;
+            border: 4px solid white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .record-btn:active {
+            transform: scale(0.95);
+        }
+
+        .record-btn-inner {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background-color: var(--accent-red);
+            transition: all 0.3s ease;
+        }
+
+        .record-btn.recording .record-btn-inner {
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            background-color: var(--accent-red);
+        }
+
+        /* Effects Button (Bottom Right) */
+        .effects-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background-color: rgba(0, 0, 0, 0.4);
+            border: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+        }
+
+        .effects-btn svg {
+            width: 24px;
+            height: 24px;
+            fill: white;
+        }
+
+        /* Desktop Sidebar (Hidden on Mobile) */
+        .desktop-sidebar {
+            display: none;
+        }
+
+        @media (min-width: 1024px) {
+            body {
+                background-color: #111;
+            }
+
+            .app-container {
+                width: 100%;
+                height: 100vh;
+                max-width: 1600px;
+                box-shadow: 0 0 30px rgba(0,0,0,0.8);
+                flex-direction: row;
+            }
+
+            /* Adjust Viewfinder for Desktop */
+            .viewfinder-container {
+                flex: 2;
+                border-right: 1px solid var(--border-color);
+            }
+
+            /* Show Desktop Sidebar */
+            .desktop-sidebar {
+                display: flex;
+                flex: 1;
+                background-color: var(--bg-card);
+                flex-direction: column;
+                padding: 24px;
+                overflow-y: auto;
+                border-left: 1px solid var(--border-color);
+            }
+
+            .desktop-sidebar-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 20px;
+            }
+
+            .desktop-sidebar-header h2 {
+                font-size: 18px;
+                font-weight: 600;
+                color: var(--text-main);
+            }
+
+            .desktop-sidebar-header span {
+                font-size: 13px;
+                color: var(--accent-blue);
+                cursor: pointer;
+            }
+
+            /* Video List Item */
+            .video-item {
+                display: flex;
+                gap: 15px;
+                padding: 12px;
+                border-radius: 10px;
+                cursor: pointer;
+                transition: background-color 0.2s;
+                border-bottom: 1px solid var(--border-color);
+            }
+
+            .video-item:hover {
+                background-color: #2a2a2a;
+            }
+
+            .video-thumb {
+                width: 80px;
+                height: 60px;
+                border-radius: 8px;
+                object-fit: cover;
+                background-color: #333;
+                flex-shrink: 0;
+                position: relative;
+            }
+
+            .video-thumb::after {
+                content: '▶';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                color: white;
+                font-size: 12px;
+                background: rgba(0,0,0,0.5);
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            .video-details {
+                flex: 1;
+                min-width: 0;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+
+            .video-title {
+                font-size: 14px;
+                font-weight: 500;
+                color: var(--text-main);
+                margin-bottom: 4px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .video-meta {
+                font-size: 12px;
+                color: var(--text-secondary);
+            }
+
+            /* Adjust Bottom Controls for Desktop */
+            .bottom-controls {
+                padding: 30px 40px;
+            }
+
+            .side-controls {
+                right: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+
+        <!-- Viewfinder (Main Camera Area) -->
+        <div class="viewfinder-container">
+
+            <!-- Camera Feed (Placeholder Image) -->
+            <img class="camera-feed" src="https://images.unsplash.com/photo-1536240474100-1c965a98c77e?q=80&w=1000&auto=format&fit=crop" alt="Camera Feed">
+
+            <!-- Dark Gradient Overlay -->
+            <div class="viewfinder-overlay"></div>
+
+            <!-- Top Controls -->
+            <div class="top-controls">
+                <!-- Close Button -->
+                <button class="icon-btn">
+                    <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                </button>
+
+                <!-- Timer & Live Indicator -->
+                <div class="timer-container">
+                    <span>00:15</span>
+                    <!-- Small Live Red Button (Top Right of Timer) -->
+                    <span class="live-indicator"></span>
+                </div>
+
+                <!-- Flash Toggle -->
+                <button class="icon-btn">
+                    <svg viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+                </button>
+            </div>
+
+            <!-- Side Controls (Right) -->
+            <div class="side-controls">
+                <!-- Flip Camera -->
+                <button class="icon-btn">
+                    <svg viewBox="0 0 24 24"><path d="M12 6v3l4-4-4-4v3c-4.42 0-8 3.58-8 8 0 1.57.46 3.03 1.24 4.26L6.7 14.8c-.45-.83-.7-1.79-.7-2.8 0-3.31 2.69-6 6-6zm6.76 1.74L17.3 9.2c.44.84.7 1.79.7 2.8 0 3.31-2.69 6-6 6v-3l-4 4 4 4v-3c4.42 0 8-3.58 8-8 0-1.57-.46-3.03-1.24-4.26z"/></svg>
+                </button>
+                <!-- Beauty/Filter -->
+                <button class="icon-btn">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+                </button>
+                <!-- Timer Settings -->
+                <button class="icon-btn">
+                    <svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+                </button>
+            </div>
+
+            <!-- Bottom Controls -->
+            <div class="bottom-controls">
+                <!-- Gallery Preview -->
+                <button class="gallery-btn">
+                    <img src="https://picsum.photos/100/100?random=1" alt="Gallery">
+                </button>
+
+                <!-- Record Button -->
+                <div class="record-btn-wrapper">
+                    <button class="record-btn recording">
+                        <div class="record-btn-inner"></div>
+                    </button>
+                </div>
+
+                <!-- Effects Button -->
+                <button class="effects-btn">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-2-5.5l5-3-5-3v6z"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Desktop Sidebar (Hidden on Mobile) -->
+        <div class="desktop-sidebar">
+            <div class="desktop-sidebar-header">
+                <h2>Recent Videos</h2>
+                <span>See All</span>
+            </div>
+
+            <!-- Video List -->
+            <div class="video-item">
+                <img class="video-thumb" src="https://picsum.photos/100/100?random=2" alt="Thumb">
+                <div class="video-details">
+                    <div class="video-title">Live Stream - Q&A Session</div>
+                    <div class="video-meta">Today, 10:30 AM • 12:45</div>
+                </div>
+            </div>
+
+            <div class="video-item">
+                <img class="video-thumb" src="https://picsum.photos/100/100?random=3" alt="Thumb">
+                <div class="video-details">
+                    <div class="video-title">Product Demo Recording</div>
+                    <div class="video-meta">Yesterday, 3:15 PM • 45:20</div>
+                </div>
+            </div>
+
+            <div class="video-item">
+                <img class="video-thumb" src="https://picsum.photos/100/100?random=4" alt="Thumb">
+                <div class="video-details">
+                    <div class="video-title">Behind the Scenes</div>
+                    <div class="video-meta">Mar 14, 9:00 AM • 08:12</div>
+                </div>
+            </div>
+
+            <div class="video-item">
+                <img class="video-thumb" src="https://picsum.photos/100/100?random=5" alt="Thumb">
+                <div class="video-details">
+                    <div class="video-title">Tutorial: Getting Started</div>
+                    <div class="video-meta">Mar 12, 2:00 PM • 15:30</div>
+                </div>
+            </div>
+
+            <div class="video-item">
+                <img class="video-thumb" src="https://picsum.photos/100/100?random=6" alt="Thumb">
+                <div class="video-details">
+                    <div class="video-title">Team Update Meeting</div>
+                    <div class="video-meta">Mar 10, 11:00 AM • 05:00</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

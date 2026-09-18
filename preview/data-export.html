@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Export Dashboard</title>
+    <style>
+        /* Base Reset & Variables */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        :root {
+            --bg-main: #f9fafb;
+            --bg-card: #ffffff;
+            --bg-hover: #f3f4f6;
+            --text-main: #111827;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+            --accent-blue: #4f46e5;
+            --accent-blue-hover: #4338ca;
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+            --accent-red: #ef4444;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        body {
+            background-color: #e5e7eb;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            color: var(--text-main);
+        }
+
+        /* App Container */
+        .app-container {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+            background-color: var(--bg-main);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Sidebar (Desktop Only) */
+        .sidebar {
+            display: none;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            padding: 20px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 5;
+        }
+
+        .top-bar h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .profile-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: var(--accent-blue);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        /* Scrollable Content */
+        .content-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 25px 100px 25px; /* Bottom padding for mobile nav */
+            scrollbar-width: none;
+        }
+
+        .content-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Export Configuration Card */
+        .export-card {
+            background-color: var(--bg-card);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+            margin-bottom: 30px;
+        }
+
+        .export-card h2 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .export-card h2 svg {
+            width: 18px;
+            height: 18px;
+            fill: var(--accent-blue);
+        }
+
+        /* Format Selection */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .format-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .format-option {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 15px 10px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background-color: var(--bg-main);
+        }
+
+        .format-option:hover {
+            border-color: var(--accent-blue);
+            background-color: #eff6ff;
+        }
+
+        .format-option input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .format-option input[type="radio"]:checked + .format-content {
+            color: var(--accent-blue);
+        }
+
+        .format-option input[type="radio"]:checked ~ .format-bg {
+            opacity: 1;
+        }
+
+        .format-option .format-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            z-index: 1;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+
+        .format-option .format-content svg {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+
+        .format-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #eff6ff;
+            border-radius: 8px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 0;
+        }
+
+        /* Date Range */
+        .date-range {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .date-input-wrapper {
+            position: relative;
+        }
+
+        .date-input-wrapper svg {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            fill: var(--text-secondary);
+        }
+
+        .date-input {
+            width: 100%;
+            padding: 10px 10px 10px 40px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--text-main);
+            background-color: var(--bg-main);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .date-input:focus {
+            border-color: var(--accent-blue);
+            background-color: var(--bg-card);
+        }
+
+        /* Checkboxes for Data Types */
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--text-main);
+            cursor: pointer;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--accent-blue);
+            cursor: pointer;
+        }
+
+        /* Export Button */
+        .export-btn {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--accent-blue);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.2s, transform 0.1s;
+            margin-top: 10px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .export-btn:hover {
+            background-color: var(--accent-blue-hover);
+            box-shadow: var(--shadow-md);
+        }
+
+        .export-btn:active {
+            transform: scale(0.98);
+        }
+
+        .export-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
+        }
+
+        /* Export History */
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .history-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .history-header span {
+            font-size: 13px;
+            color: var(--accent-blue);
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        /* History Item */
+        .history-item {
+            background-color: var(--bg-card);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow 0.2s;
+        }
+
+        .history-item:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .file-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            background-color: #eff6ff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .file-icon svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--accent-blue);
+        }
+
+        .history-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .history-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .history-meta {
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .history-status {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
+        }
+
+        .status-completed { background-color: #d1fae5; color: #065f46; }
+        .status-processing { background-color: #fef3c7; color: #92400e; }
+        .status-failed { background-color: #fee2e2; color: #991b1b; }
+
+        .history-actions {
+            display: flex;
+            gap: 5px;
+            margin-left: 10px;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.2s;
+        }
+
+        .action-btn:hover {
+            background-color: var(--bg-hover);
+        }
+
+        .action-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: var(--text-secondary);
+        }
+
+        .action-btn.download:hover svg { fill: var(--accent-blue); }
+        .action-btn.delete:hover svg { fill: var(--accent-red); }
+
+        /* Bottom Navigation (Mobile) */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 65px;
+            background-color: var(--bg-card);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 20;
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 5px;
+            width: 60px;
+            border-radius: 8px;
+            transition: background-color 0.2s;
+        }
+
+        .nav-btn:hover {
+            background-color: var(--bg-hover);
+        }
+
+        .nav-btn svg {
+            width: 22px;
+            height: 22px;
+            fill: var(--text-secondary);
+            transition: fill 0.2s;
+        }
+
+        .nav-btn.active svg {
+            fill: var(--accent-blue);
+        }
+
+        .nav-btn span {
+            font-size: 10px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .nav-btn.active span {
+            color: var(--accent-blue);
+        }
+
+        @media (min-width: 1024px) {
+            body {
+                background-color: #e5e7eb;
+            }
+
+            .app-container {
+                width: 100%;
+                height: 100vh;
+                max-width: 1600px;
+                box-shadow: 0 0 30px rgba(0,0,0,0.1);
+                flex-direction: row;
+            }
+
+            /* Show Desktop Sidebar */
+            .sidebar {
+                display: flex;
+                width: 260px;
+                background-color: var(--bg-card);
+                border-right: 1px solid var(--border-color);
+                flex-direction: column;
+                padding: 24px 0;
+                flex-shrink: 0;
+                z-index: 30;
+            }
+
+            .sidebar-logo {
+                padding: 0 24px 24px;
+                font-size: 18px;
+                font-weight: 700;
+                color: var(--text-main);
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .sidebar-logo svg {
+                width: 24px;
+                height: 24px;
+                fill: var(--accent-blue);
+            }
+
+            .sidebar-nav {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                padding: 0 12px;
+                flex: 1;
+            }
+
+            .nav-item {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                padding: 12px 16px;
+                border-radius: 10px;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: 500;
+                color: var(--text-secondary);
+                transition: background-color 0.2s, color 0.2s;
+            }
+
+            .nav-item:hover {
+                background-color: var(--bg-hover);
+                color: var(--text-main);
+            }
+
+            .nav-item.active {
+                background-color: #eff6ff;
+                color: var(--accent-blue);
+            }
+
+            .nav-item svg {
+                width: 20px;
+                height: 20px;
+                fill: currentColor;
+            }
+
+            /* Adjust Main Content Layout */
+            .main-content {
+                flex-direction: row;
+            }
+
+            .content-scroll {
+                padding: 30px 50px;
+            }
+
+            /* Hide Mobile Bottom Nav */
+            .bottom-nav {
+                display: none;
+            }
+
+            /* Adjust Export Card for Desktop */
+            .export-card {
+                max-width: 700px;
+                margin: 0 auto 40px auto;
+                padding: 30px;
+            }
+
+            /* Grid Layout for History */
+            .history-list {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+                gap: 15px;
+            }
+
+            .top-bar {
+                padding: 20px 50px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+
+        <!-- Sidebar (Desktop Only) -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <!-- Database/Export Icon -->
+                <svg viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4zM2 4v16h20V4H2zm18 14H4V6h16v12z"/></svg>
+                DataSync
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-item active">
+                    <!-- Dashboard Icon -->
+                    <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                    Export
+                </div>
+                <div class="nav-item">
+                    <!-- History Icon -->
+                    <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+                    History
+                </div>
+                <div class="nav-item">
+                    <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                    Settings
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+
+            <!-- Top Bar -->
+            <header class="top-bar">
+                <h1>Data Export</h1>
+                <div class="profile-avatar">JD</div>
+            </header>
+
+            <!-- Scrollable Content -->
+            <div class="content-scroll">
+
+                <!-- Export Configuration Card -->
+                <div class="export-card">
+                    <h2>
+                        <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                        Configure Export
+                    </h2>
+
+                    <!-- Format Selection -->
+                    <div class="form-group">
+                        <label class="form-label">File Format</label>
+                        <div class="format-options">
+                            <label class="format-option">
+                                <input type="radio" name="format" value="csv" checked>
+                                <div class="format-bg"></div>
+                                <div class="format-content">
+                                    <!-- CSV Icon -->
+                                    <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-8-2h2v-4h-2v4zm-2-4H7v4h2v-4zm6-4h-2v8h2V9z"/></svg>
+                                    CSV
+                                </div>
+                            </label>
+                            <label class="format-option">
+                                <input type="radio" name="format" value="json">
+                                <div class="format-bg"></div>
+                                <div class="format-content">
+                                    <!-- JSON Icon -->
+                                    <svg viewBox="0 0 24 24"><path d="M5 3h14c1.1 0 2 .9 2 2v14c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2zm0 16h14V5H5v14zm4-2H7v-2h2v2zm0-4H7v-2h2v2zm0-4H7V7h2v2zm6 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v2z"/></svg>
+                                    JSON
+                                </div>
+                            </label>
+                            <label class="format-option">
+                                <input type="radio" name="format" value="pdf">
+                                <div class="format-bg"></div>
+                                <div class="format-content">
+                                    <!-- PDF Icon -->
+                                    <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12zM8 9h2v2H8zm0-3h2v2H8zm3 3h2v2h-2zm0-3h2v2h-2zm3 3h2v2h-2zm0-3h2v2h-2z"/></svg>
+                                    PDF
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Date Range -->
+                    <div class="form-group">
+                        <label class="form-label">Date Range</label>
+                        <div class="date-range">
+                            <div class="date-input-wrapper">
+                                <svg viewBox="0 0 24 24"><path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+                                <input type="date" class="date-input" value="2024-03-01">
+                            </div>
+                            <div class="date-input-wrapper">
+                                <svg viewBox="0 0 24 24"><path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+                                <input type="date" class="date-input" value="2024-03-31">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Data Types -->
+                    <div class="form-group">
+                        <label class="form-label">Data to Include</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" checked> Messages
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" checked> Contacts
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox"> Media Files
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox"> Call Logs
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Export Button -->
+                    <button class="export-btn">
+                        <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                        Generate Export
+                    </button>
+                </div>
+
+                <!-- Export History -->
+                <div class="history-header">
+                    <h2>Recent Exports</h2>
+                    <span>Clear All</span>
+                </div>
+
+                <div class="history-list">
+
+                    <!-- History Item 1 -->
+                    <div class="history-item">
+                        <div class="file-icon">
+                            <svg viewBox="0 0 24 24"><path d="M6 2c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6H6zm7 7V3.5L18.5 9H13z"/></svg>
+                        </div>
+                        <div class="history-details">
+                            <div class="history-name">messages_export_2024-03.csv</div>
+                            <div class="history-meta">
+                                <span>Mar 15, 2024</span>
+                                <span>•</span>
+                                <span>2.4 MB</span>
+                            </div>
+                        </div>
+                        <div class="history-status status-completed">Completed</div>
+                        <div class="history-actions">
+                            <button class="action-btn download">
+                                <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                            </button>
+                            <button class="action-btn delete">
+                                <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- History Item 2 -->
+                    <div class="history-item">
+                        <div class="file-icon">
+                            <svg viewBox="0 0 24 24"><path d="M6 2c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6H6zm7 7V3.5L18.5 9H13z"/></svg>
+                        </div>
+                        <div class="history-details">
+                            <div class="history-name">contacts_backup.json</div>
+                            <div class="history-meta">
+                                <span>Mar 10, 2024</span>
+                                <span>•</span>
+                                <span>1.1 MB</span>
+                            </div>
+                        </div>
+                        <div class="history-status status-completed">Completed</div>
+                        <div class="history-actions">
+                            <button class="action-btn download">
+                                <svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                            </button>
+                            <button class="action-btn delete">
+                                <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- History Item 3 -->
+                    <div class="history-item">
+                        <div class="file-icon" style="background-color: #fef3c7;">
+                            <svg viewBox="0 0 24 24" fill="#f59e0b"><path d="M6 2c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6H6zm7 7V3.5L18.5 9H13z"/></svg>
+                        </div>
+                        <div class="history-details">
+                            <div class="history-name">full_data_archive.csv</div>
+                            <div class="history-meta">
+                                <span>Mar 05, 2024</span>
+                                <span>•</span>
+                                <span>Processing...</span>
+                            </div>
+                        </div>
+                        <div class="history-status status-processing">Processing</div>
+                        <div class="history-actions">
+                            <!-- No actions while processing -->
+                        </div>
+                    </div>
+
+                    <!-- History Item 4 -->
+                    <div class="history-item">
+                        <div class="file-icon" style="background-color: #fee2e2;">
+                            <svg viewBox="0 0 24 24" fill="#ef4444"><path d="M6 2c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6H6zm7 7V3.5L18.5 9H13z"/></svg>
+                        </div>
+                        <div class="history-details">
+                            <div class="history-name">media_files_export.pdf</div>
+                            <div class="history-meta">
+                                <span>Feb 28, 2024</span>
+                                <span>•</span>
+                                <span>Failed</span>
+                            </div>
+                        </div>
+                        <div class="history-status status-failed">Failed</div>
+                        <div class="history-actions">
+                            <button class="action-btn delete">
+                                <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Bottom Navigation (Mobile) -->
+            <nav class="bottom-nav">
+                <button class="nav-btn active">
+                    <!-- Dashboard Icon -->
+                    <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                    <span>Export</span>
+                </button>
+                <button class="nav-btn">
+                    <!-- History Icon -->
+                    <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+                    <span>History</span>
+                </button>
+                <button class="nav-btn">
+                    <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                    <span>Settings</span>
+                </button>
+            </nav>
+
+        </main>
+
+    </div>
+
+</body>
+</html>
