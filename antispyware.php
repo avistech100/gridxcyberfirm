@@ -378,23 +378,43 @@ $plans = [
             opacity: 1;
         }
 
-        .as-card-label {
-            font-size: 0.88rem;
-            font-weight: 600;
-            color: var(--text-secondary);
+        .as-card-price {
+            font-size: 2.1rem;
+            font-weight: 800;
+            color: var(--dark);
+            line-height: 1;
+            letter-spacing: -0.03em;
             margin-bottom: 0.35rem;
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 2px;
         }
 
-        .as-plan-card.selected .as-card-label {
+        .as-currency {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .as-plan-card.selected .as-card-price {
             color: var(--primary);
         }
 
-        .as-card-price {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--dark);
-            line-height: 1.1;
-            margin-bottom: 0.45rem;
+        .as-plan-card.selected .as-currency {
+            color: var(--primary);
+        }
+
+        .as-card-label {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 0.65rem;
+            text-transform: capitalize;
+        }
+
+        .as-plan-card.selected .as-card-label {
+            color: var(--text-secondary);
         }
 
         .as-card-desc {
@@ -556,8 +576,8 @@ $plans = [
                 <?php endif; ?>
                 <div>
                     <div class="as-plan-radio"></div>
+                    <div class="as-card-price"><span class="as-currency">$</span><?= number_format($plan['amount']) ?></div>
                     <div class="as-card-label"><?= e($plan['label']) ?></div>
-                    <div class="as-card-price">$<?= number_format($plan['amount']) ?></div>
                 </div>
                 <div class="as-card-desc"><?= e($plan['desc']) ?></div>
             </div>

