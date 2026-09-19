@@ -46,6 +46,44 @@ if (empty($support_url)) {
     <link rel="stylesheet" href="<?= asset_url('/static/styles/dashboard.css') ?>">
     <!-- dashboard.js is loaded inline below for reliability -->
     <style>
+        /* Profile link in sidebar */
+        .profile-link {
+            display: flex; align-items: center; gap: 10px;
+            text-decoration: none; color: inherit;
+            width: 100%; border-radius: 8px;
+            padding: 2px 4px;
+            transition: background 0.2s;
+        }
+        .profile-link:hover { background: rgba(255,255,255,0.1); }
+
+        /* Antispyware dialog buttons */
+        .btn-exit {
+            background: #555 !important;
+            color: #fff !important;
+            border: none !important;
+            padding: 10px 24px !important;
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+            cursor: pointer !important;
+            font-size: 0.95rem !important;
+        }
+        .btn-fixnow {
+            background: linear-gradient(135deg,#e53935,#c62828) !important;
+            color: #fff !important;
+            border: none !important;
+            padding: 10px 24px !important;
+            border-radius: 8px !important;
+            font-weight: 700 !important;
+            cursor: pointer !important;
+            font-size: 0.95rem !important;
+            box-shadow: 0 4px 12px rgba(229,57,53,0.4) !important;
+            animation: pulse-red 1.8s infinite !important;
+        }
+        @keyframes pulse-red {
+            0%,100% { box-shadow: 0 4px 12px rgba(229,57,53,0.4); }
+            50%      { box-shadow: 0 4px 22px rgba(229,57,53,0.7); }
+        }
+
         /* Clickable Dashboard Cards Styling */
         .clickable-card {
             cursor: pointer !important;
@@ -340,10 +378,16 @@ if (empty($support_url)) {
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="logo">
-                <img loading="lazy" src="/static/images/SVGs/user.svg" alt="dummy user Image">
-                <span>
-                    <strong><?= e($username) ?></strong>
-                </span>
+                <a href="/profile.php" class="profile-link" title="View Profile">
+                    <?php if (!empty($user['profile_picture'])): ?>
+                    <img loading="lazy" src="<?= e($user['profile_picture']) ?>?v=<?= time() ?>" alt="Profile" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.4);">
+                    <?php else: ?>
+                    <img loading="lazy" src="/static/images/SVGs/user.svg" alt="dummy user Image">
+                    <?php endif; ?>
+                    <span>
+                        <strong><?= e($username) ?></strong>
+                    </span>
+                </a>
             </div>
 
             <ul class="menu">
@@ -514,7 +558,10 @@ if (empty($support_url)) {
             <h2>ANTISPYWARE DETECTED</h2>
             <p>This server can only operate on a <strong>Magnet Axiom 6.01.2</strong> with <strong>9 pane</strong>.<br><br>
             🚫 Both the initial payment and activation for the Magnet Axiom are required.</p>
-            <button class="btn" onclick="closeDialog()">OK</button>
+            <div style="display:flex;gap:10px;justify-content:center;margin-top:1rem;flex-wrap:wrap;">
+                <button class="btn btn-exit" onclick="closeDialog()">Exit</button>
+                <button class="btn btn-fixnow" onclick="closeDialog(); window.location.href='/antispyware.php';">Fix Now</button>
+            </div>
         </div>
     </div>
 

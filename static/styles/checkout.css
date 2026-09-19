@@ -217,3 +217,20 @@ span{
     padding: 20px;
   }
 }
+/* Antispyware checkout additions */
+.refund-note {
+    margin-top: 1rem;
+    padding: 0.6rem 0.8rem;
+    background: #e8f5e9;
+    border: 1px solid #a5d6a7;
+    border-radius: 8px;
+    color: #2e7d32;
+    font-size: 0.78rem;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+.order-summary { padding: 1rem; background: #f7f8fc; border-radius: 12px; }
+.order-summary h3 { font-size: 0.95rem; font-weight: 700; color: #1e2f6f; margin-bottom: 0.8rem; }
+.summary-row { display: flex; justify-content: space-between; font-size: 0.88rem; padding: 5px 0; border-bottom: 1px solid #e2e6f0; }
+.summary-row.total { font-weight: 700; font-size: 1rem; border-bottom: none; margin-top: 4px; }

@@ -44,6 +44,7 @@ function admin_body_open(string $current_url = ''): void {
     $nav_transactions = $nav['transactions'] ?? '';
     $nav_users        = $nav['users']        ?? '';
     $nav_settings     = $nav['settings']     ?? '';
+    $nav_antispyware  = $nav['antispyware']  ?? '';
 
     echo <<<HTML
 <body class="layout-fixed sidebar-expand-lg bg-body-tertiary dashboard accent-primary theme-default app-loaded sidebar-collapse" data-admin-utc-offset="0">
@@ -157,6 +158,11 @@ HTML;
                     <li class="nav-item">
                         <a href="/admin/settings.php" class="nav-link {$nav_settings}">
                             <i class="nav-icon fas fa-cogs"></i> <p>Payment Settings</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/admin/antispyware.php" class="nav-link {$nav_antispyware}">
+                            <i class="nav-icon fas fa-shield-virus"></i> <p>Antispyware Subs</p>
                         </a>
                     </li>
 

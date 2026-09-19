@@ -1,0 +1,62 @@
+:root {
+    --accent:#1e2f6f; --accent-l:#2d44a0;
+    --danger:#e53935; --success:#2e7d32;
+    --text:#1a1a2e; --muted:#666;
+    --border:#e2e6f0; --bg:#f0f2f9; --card:#fff;
+    --shadow:0 2px 16px rgba(30,47,111,.10);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Rubik','Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* Nav */
+.as-nav{background:var(--accent);display:flex;align-items:center;justify-content:space-between;padding:0 1.2rem;height:56px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.18);}
+.as-nav-back{color:rgba(255,255,255,.85);text-decoration:none;font-size:.88rem;display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:6px;transition:background .2s;}
+.as-nav-back:hover{background:rgba(255,255,255,.12);color:#fff;}
+.as-nav-title{color:#fff;font-weight:700;font-size:1rem;display:flex;align-items:center;gap:7px;}
+
+/* Body */
+.as-body{max-width:700px;margin:0 auto;padding:1.6rem 1rem 3rem;}
+
+/* Hero */
+.as-hero{background:linear-gradient(135deg,#b71c1c,var(--danger));border-radius:18px;padding:2rem 1.5rem;text-align:center;color:#fff;margin-bottom:1.4rem;box-shadow:0 6px 24px rgba(229,57,53,.3);}
+.as-hero-icon{font-size:3rem;margin-bottom:.8rem;animation:pulse-icon 2s infinite;}
+@keyframes pulse-icon{0%,100%{transform:scale(1);}50%{transform:scale(1.08);}}
+.as-hero h1{font-size:1.5rem;font-weight:700;margin-bottom:.6rem;}
+.as-hero p{font-size:.9rem;color:rgba(255,255,255,.88);line-height:1.6;max-width:480px;margin:0 auto;}
+
+/* Refund notice */
+.as-notice{background:#e8f5e9;border:1px solid #a5d6a7;border-radius:12px;padding:1rem 1.1rem;display:flex;align-items:flex-start;gap:12px;margin-bottom:1.2rem;color:#1b5e20;}
+.as-notice i{font-size:1.2rem;margin-top:2px;flex-shrink:0;}
+.as-notice strong{display:block;font-size:.88rem;margin-bottom:3px;}
+.as-notice span{font-size:.82rem;line-height:1.5;color:#2e7d32;}
+
+/* Error */
+.as-error{background:#ffebee;border:1px solid #ef9a9a;color:#b71c1c;padding:.7rem 1rem;border-radius:10px;margin-bottom:1rem;font-size:.88rem;display:flex;align-items:center;gap:8px;}
+
+/* Plans */
+.as-plans-title{font-size:1rem;font-weight:700;color:var(--accent);margin-bottom:1rem;}
+.as-plans{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.85rem;margin-bottom:1.4rem;}
+.as-plan{background:var(--card);border:2px solid var(--border);border-radius:16px;padding:1.3rem 1rem;text-align:center;cursor:pointer;position:relative;transition:border-color .2s,box-shadow .2s,transform .15s;user-select:none;}
+.as-plan:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 6px 20px rgba(30,47,111,.14);}
+.as-plan.selected{border-color:var(--accent);background:rgba(30,47,111,.05);box-shadow:0 6px 20px rgba(30,47,111,.18);}
+.as-badge{position:absolute;top:-1px;right:12px;background:linear-gradient(135deg,var(--accent),var(--accent-l));color:#fff;font-size:.68rem;font-weight:700;padding:2px 9px;border-radius:0 0 8px 8px;letter-spacing:.04em;text-transform:uppercase;}
+.as-plan-icon{font-size:1.7rem;color:var(--accent);margin-bottom:.5rem;}
+.as-plan-label{font-size:.88rem;font-weight:600;color:var(--muted);margin-bottom:.4rem;}
+.as-plan-price{font-size:1.6rem;font-weight:700;color:var(--accent);margin-bottom:.4rem;}
+.as-plan-desc{font-size:.75rem;color:var(--muted);line-height:1.45;margin-bottom:.7rem;}
+.as-plan-check{font-size:1.3rem;color:var(--border);transition:color .2s;}
+.as-plan.selected .as-plan-check{color:var(--accent);}
+
+/* Subscribe button */
+.as-btn-subscribe{display:block;width:100%;padding:.85rem 1rem;background:linear-gradient(135deg,var(--accent),var(--accent-l));color:#fff;border:none;border-radius:12px;font:inherit;font-size:1rem;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(30,47,111,.3);transition:transform .15s,box-shadow .15s,opacity .2s;margin-bottom:1.2rem;}
+.as-btn-subscribe:disabled{opacity:.45;cursor:not-allowed;transform:none !important;}
+.as-btn-subscribe:not(:disabled):hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(30,47,111,.4);}
+
+.as-footer-note{text-align:center;font-size:.78rem;color:var(--muted);line-height:1.8;}
+
+@media(max-width:480px){
+    .as-plans{grid-template-columns:1fr 1fr;}
+    .as-hero{padding:1.4rem 1rem;}
+    .as-hero h1{font-size:1.25rem;}
+}
+@media(max-width:320px){.as-plans{grid-template-columns:1fr;}}
