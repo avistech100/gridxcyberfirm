@@ -190,23 +190,22 @@ $joined     = $user['date_joined']     ?? '';
 
         <!-- Crop modal -->
         <div class="crop-modal" id="cropModal" style="display:none;">
-            <div class="crop-modal-inner">
-                <h3><i class="fa-solid fa-crop-simple"></i> Crop Your Photo</h3>
+            <div class="crop-modal-inner" role="dialog" aria-modal="true" aria-labelledby="cropTitle">
+                <h3 id="cropTitle"><i class="fa-solid fa-crop-simple"></i> Crop Your Photo</h3>
                 <p class="crop-note">Drag and zoom to position. The circle shows how it will appear.</p>
                 <div class="crop-preview-wrap">
-                    <div class="crop-frame" id="cropFrame">
-                        <img id="cropImg" src="" alt="Crop preview">
-                        <div class="crop-circle-mask"></div>
+                    <div class="crop-stage" id="cropStage">
+                        <canvas id="cropCanvas"></canvas>
                     </div>
                 </div>
                 <div class="crop-controls">
-                    <label>Zoom</label>
-                    <input type="range" id="cropZoom" min="1" max="3" step="0.05" value="1">
+                    <label for="cropZoom">Zoom</label>
+                    <input type="range" id="cropZoom" min="1" max="3" step="0.01" value="1">
                 </div>
                 <div class="crop-actions">
-                    <button type="button" class="btn-outline" onclick="cancelCrop()">Cancel</button>
-                    <button type="button" class="btn-primary-sm" onclick="applyCrop()">
-                        <i class="fa-solid fa-check"></i> Use This Photo
+                    <button type="button" class="btn-outline" id="cropCancelBtn">Cancel</button>
+                    <button type="button" class="btn-primary-sm" id="cropApplyBtn">
+                        <i class="fa-solid fa-check"></i> <span>Use This Photo</span>
                     </button>
                 </div>
             </div>
@@ -425,137 +424,205 @@ if (pwConfirm) {
 }
 
 // ── Profile picture upload & crop ────────────────────────
-let cropScale = 1, cropStartX = 0, cropStartY = 0, cropX = 0, cropY = 0, isDragging = false;
-let baseW = 220, baseH = 220;
-let originalFile = null;
+// Canvas-based cropper. The crop frame is a square; the circle is that square's
+// inscribed circle, so what you see is exactly what gets saved.
+(function () {
+    const MAX_SOURCE_PX = 1600;  // working size of the photo (keeps memory low on phones)
+    const OUTPUT_PX     = 400;   // saved avatar size
+    const MAX_ZOOM      = 3;
 
-document.getElementById('profilePicInput').addEventListener('change', function() {
-    const file = this.files[0];
-    if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-        alert('Image must be under 2MB.'); this.value = ''; return;
+    const input     = document.getElementById('profilePicInput');
+    const form      = document.getElementById('photoForm');
+    const modal     = document.getElementById('cropModal');
+    const stage     = document.getElementById('cropStage');
+    const canvas    = document.getElementById('cropCanvas');
+    const zoomEl    = document.getElementById('cropZoom');
+    const applyBtn  = document.getElementById('cropApplyBtn');
+    const cancelBtn = document.getElementById('cropCancelBtn');
+    const ctx       = canvas.getContext('2d');
+
+    // cx/cy = the point of the photo that sits at the centre of the crop frame.
+    // Everything else (position, limits, export) is derived from it.
+    const s = { src: null, iw: 0, ih: 0, size: 0, dpr: 1, minScale: 1, zoom: 1,
+                cx: 0, cy: 0, dragging: false, lx: 0, ly: 0, raf: 0 };
+
+    const scale = () => s.minScale * s.zoom;
+
+    // Keep the photo covering the whole frame. If the photo has no spare room
+    // in a direction, that direction simply can't move: no special cases needed.
+    function clampCenter() {
+        const half = s.size / (2 * scale());
+        s.cx = Math.min(s.iw - half, Math.max(half, s.cx));
+        s.cy = Math.min(s.ih - half, Math.max(half, s.cy));
     }
-    originalFile = file;
-    const reader = new FileReader();
-    reader.onload = e => {
-        const img = document.getElementById('cropImg');
-        img.onload = () => {
-            const aspect = img.naturalWidth / img.naturalHeight;
-            if (aspect > 1) { // Landscape
-                baseH = 220;
-                baseW = 220 * aspect;
-            } else { // Portrait or square
-                baseW = 220;
-                baseH = 220 / aspect;
-            }
-            img.style.width = baseW + 'px';
-            img.style.height = baseH + 'px';
-            
-            // Center the image initially
-            cropX = (220 - baseW) / 2;
-            cropY = (220 - baseH) / 2;
-            cropScale = 1;
-            document.getElementById('cropZoom').value = 1;
-            updateCropTransform();
-            document.getElementById('cropModal').style.display = 'flex';
-        };
-        img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-});
 
-function updateCropTransform() {
-    const img = document.getElementById('cropImg');
-    img.style.transform = `translate(${cropX}px, ${cropY}px) scale(${cropScale})`;
-}
+    // Read the real frame size from the DOM (never hard-code it)
+    function measure() {
+        s.size = stage.clientWidth;
+        s.dpr  = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = canvas.height = Math.round(s.size * s.dpr);
+        s.minScale = s.size / Math.min(s.iw, s.ih);   // shortest side fills the frame exactly
+    }
 
-document.getElementById('cropZoom').addEventListener('input', function() {
-    const newScale = parseFloat(this.value);
-    const cx = 110, cy = 110; // center of 220x220 frame
-    cropX = cx - (cx - cropX) * (newScale / cropScale);
-    cropY = cy - (cy - cropY) * (newScale / cropScale);
-    cropScale = newScale;
-    
-    clampCrop();
-    updateCropTransform();
-});
+    function draw() {
+        s.raf = 0;
+        if (!s.src) return;
+        const sc = scale(), half = s.size / 2;
+        ctx.setTransform(s.dpr, 0, 0, s.dpr, 0, 0);
+        ctx.clearRect(0, 0, s.size, s.size);
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(s.src, half - s.cx * sc, half - s.cy * sc, s.iw * sc, s.ih * sc);
+    }
+    const requestDraw = () => { if (!s.raf) s.raf = requestAnimationFrame(draw); };
 
-function clampCrop() {
-    const minX = 220 - (baseW * cropScale);
-    const minY = 220 - (baseH * cropScale);
-    cropX = Math.min(0, Math.max(minX, cropX));
-    cropY = Math.min(0, Math.max(minY, cropY));
-}
+    function loadImage(file) {
+        return new Promise((resolve, reject) => {
+            const url = URL.createObjectURL(file);          // no base64 string in memory
+            const img = new Image();
+            img.onload  = () => { URL.revokeObjectURL(url); resolve(img); };
+            img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('decode')); };
+            img.src = url;
+        });
+    }
 
-const cropFrame = document.getElementById('cropFrame');
-cropFrame.addEventListener('pointerdown', e => {
-    isDragging = true;
-    cropFrame.setPointerCapture(e.pointerId);
-    cropStartX = e.clientX - cropX;
-    cropStartY = e.clientY - cropY;
-    cropFrame.style.cursor = 'grabbing';
-    e.preventDefault();
-});
-cropFrame.addEventListener('pointermove', e => {
-    if (!isDragging) return;
-    cropX = e.clientX - cropStartX;
-    cropY = e.clientY - cropStartY;
-    clampCrop();
-    updateCropTransform();
-    e.preventDefault();
-});
-const stopDrag = () => { isDragging = false; cropFrame.style.cursor = 'grab'; };
-cropFrame.addEventListener('pointerup', stopDrag);
-cropFrame.addEventListener('pointercancel', stopDrag);
+    // Big phone photos (12MP+) are shrunk once so dragging/zooming stays smooth
+    function toWorkingSource(img) {
+        const w = img.naturalWidth, h = img.naturalHeight;
+        const k = Math.min(1, MAX_SOURCE_PX / Math.max(w, h));
+        if (k === 1) return { src: img, w: w, h: h };
+        const c = document.createElement('canvas');
+        c.width  = Math.round(w * k);
+        c.height = Math.round(h * k);
+        const cctx = c.getContext('2d');
+        cctx.imageSmoothingQuality = 'high';
+        cctx.drawImage(img, 0, 0, c.width, c.height);
+        return { src: c, w: c.width, h: c.height };
+    }
 
-function cancelCrop() {
-    document.getElementById('cropModal').style.display='none';
-    document.getElementById('profilePicInput').value='';
-}
+    function setBusy(busy) {
+        applyBtn.disabled = cancelBtn.disabled = busy;
+        applyBtn.querySelector('span').textContent = busy ? 'Saving…' : 'Use This Photo';
+    }
 
-function applyCrop() {
-    const img = document.getElementById('cropImg');
-    
-    const canvas = document.createElement('canvas');
-    canvas.width  = 400;
-    canvas.height = 400;
-    const ctx = canvas.getContext('2d');
+    function openModal() {
+        setBusy(false);
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        measure();          // must run after the modal is visible
+        clampCenter();
+        draw();
+    }
 
-    ctx.beginPath();
-    ctx.arc(200, 200, 200, 0, Math.PI*2);
-    ctx.clip();
+    function closeModal() {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+        s.src = null;       // release the image memory
+    }
 
-    const scaleToNatural = img.naturalWidth / (baseW * cropScale);
-    const sx = -cropX * scaleToNatural;
-    const sy = -cropY * scaleToNatural;
-    const sw = 220 * scaleToNatural;
-    const sh = 220 * scaleToNatural;
+    function cancelCrop() {
+        closeModal();
+        input.value = '';
+    }
 
-    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, 400, 400);
-
-    canvas.toBlob(blob => {
-        const croppedFile = new File([blob], 'profile.jpg', {type:'image/jpeg'});
-        const dt = new DataTransfer();
-        dt.items.add(croppedFile);
-        const input = document.getElementById('profilePicInput');
-        input.files = dt.files;
-
-        // Preview
-        const prev = document.getElementById('avatarPreview');
-        if (prev.tagName === 'IMG') {
-            prev.src = URL.createObjectURL(blob);
-        } else {
-            const newImg = document.createElement('img');
-            newImg.src = URL.createObjectURL(blob);
-            newImg.className = 'avatar-img';
-            newImg.id = 'avatarPreview';
-            prev.replaceWith(newImg);
+    input.addEventListener('change', async function () {
+        const file = input.files && input.files[0];
+        if (!file) return;
+        try {
+            const img = await loadImage(file);
+            if (!img.naturalWidth || !img.naturalHeight) throw new Error('empty');
+            const work = toWorkingSource(img);
+            s.src = work.src; s.iw = work.w; s.ih = work.h;
+        } catch (err) {
+            alert('That image could not be opened. Please choose a JPG, PNG or WEBP photo.');
+            input.value = '';
+            return;
         }
+        s.zoom = 1; zoomEl.value = 1;
+        s.cx = s.iw / 2; s.cy = s.ih / 2;   // start centred
+        openModal();
+    });
 
-        document.getElementById('cropModal').style.display='none';
-        document.getElementById('photoForm').submit();
-    }, 'image/jpeg', 0.92);
-}
+    zoomEl.addEventListener('input', function () {
+        s.zoom = parseFloat(zoomEl.value);
+        clampCenter();
+        requestDraw();
+    });
+
+    // Mouse wheel zoom (desktop)
+    stage.addEventListener('wheel', function (e) {
+        e.preventDefault();
+        s.zoom = Math.min(MAX_ZOOM, Math.max(1, s.zoom - e.deltaY * 0.002));
+        zoomEl.value = s.zoom;
+        clampCenter();
+        requestDraw();
+    }, { passive: false });
+
+    // Drag (mouse + touch)
+    stage.addEventListener('pointerdown', function (e) {
+        s.dragging = true; s.lx = e.clientX; s.ly = e.clientY;
+        stage.setPointerCapture(e.pointerId);
+        stage.classList.add('is-dragging');
+        e.preventDefault();
+    });
+    stage.addEventListener('pointermove', function (e) {
+        if (!s.dragging) return;
+        const sc = scale();
+        s.cx -= (e.clientX - s.lx) / sc;
+        s.cy -= (e.clientY - s.ly) / sc;
+        s.lx = e.clientX; s.ly = e.clientY;
+        clampCenter();
+        requestDraw();
+        e.preventDefault();
+    });
+    const endDrag = () => { s.dragging = false; stage.classList.remove('is-dragging'); };
+    stage.addEventListener('pointerup', endDrag);
+    stage.addEventListener('pointercancel', endDrag);
+    stage.addEventListener('lostpointercapture', endDrag);
+
+    // Rotation / resize while the modal is open
+    window.addEventListener('resize', function () {
+        if (!s.src || modal.style.display === 'none' || stage.clientWidth === s.size) return;
+        measure(); clampCenter(); requestDraw();
+    });
+
+    cancelBtn.addEventListener('click', cancelCrop);
+    modal.addEventListener('click', function (e) { if (e.target === modal && !applyBtn.disabled) cancelCrop(); });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && modal.style.display !== 'none' && !applyBtn.disabled) cancelCrop();
+    });
+    window.addEventListener('pageshow', () => setBusy(false));   // back-button safety
+
+    applyBtn.addEventListener('click', function () {
+        if (!s.src || applyBtn.disabled) return;
+        setBusy(true);
+
+        // The square of the photo currently inside the crop frame → saved avatar.
+        // Saved as a full square (no baked-in circle/black corners); CSS rounds it.
+        const side = s.size / scale();
+        const out  = document.createElement('canvas');
+        out.width = out.height = OUTPUT_PX;
+        const octx = out.getContext('2d');
+        octx.imageSmoothingQuality = 'high';
+        octx.drawImage(s.src, s.cx - side / 2, s.cy - side / 2, side, side, 0, 0, OUTPUT_PX, OUTPUT_PX);
+
+        out.toBlob(function (blob) {
+            if (!blob) { setBusy(false); alert('Could not process the image. Please try again.'); return; }
+            const file = new File([blob], 'profile.jpg', { type: 'image/jpeg' });
+            try {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                input.files = dt.files;
+                form.submit();
+            } catch (err) {   // very old browsers without DataTransfer
+                const fd = new FormData(form);
+                fd.set('profile_pic', file);
+                fetch(form.action, { method: 'POST', body: fd, credentials: 'same-origin' })
+                    .then(() => location.reload())
+                    .catch(() => { setBusy(false); alert('Upload failed. Please try again.'); });
+            }
+        }, 'image/jpeg', 0.9);
+    });
+})();
 </script>
 </body>
 </html>

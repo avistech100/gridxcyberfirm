@@ -148,10 +148,11 @@ body {
 /* ── Crop Modal ── */
 .crop-modal {
     position: fixed; inset: 0; z-index: 9999;
-    background: rgba(0,0,0,0.65);
+    background: rgba(0,0,0,0.7);              /* no backdrop-filter: it is very heavy on phones */
     display: flex; align-items: center; justify-content: center;
     padding: 1rem;
-    backdrop-filter: blur(4px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 .crop-modal-inner {
     background: #fff;
@@ -161,24 +162,28 @@ body {
 }
 .crop-modal-inner h3 { font-size: 1.05rem; color: var(--accent); margin-bottom: 0.3rem; }
 .crop-note { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem; }
-.crop-preview-wrap { display: flex; justify-content: center; margin-bottom: 1rem; }
-.crop-frame {
-    width: 220px; height: 220px;
-    overflow: hidden;
+.crop-preview-wrap { display: flex; justify-content: center; margin-bottom: 1rem; padding: 4px 0; }
+
+/* The stage IS the square crop frame (clipped to a circle). The ring is drawn
+   OUTSIDE it with box-shadow, so the ring never eats into the crop area. */
+.crop-stage {
+    width: min(220px, 68vw);
+    aspect-ratio: 1 / 1;
     position: relative;
+    overflow: hidden;
     border-radius: 50%;
-    border: 3px solid var(--accent);
     background: #eee;
+    box-shadow: 0 0 0 3px var(--accent);
     cursor: grab;
     touch-action: none;
-}
-.crop-frame:active { cursor: grabbing; }
-.crop-frame img {
-    position: absolute; top: 0; left: 0;
-    transform-origin: 0 0;
     user-select: none;
-    -webkit-user-drag: none;
-    pointer-events: none;
+    -webkit-user-select: none;
+}
+.crop-stage.is-dragging { cursor: grabbing; }
+.crop-stage canvas {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    display: block;
 }
 .crop-controls { margin-bottom: 1rem; }
 .crop-controls label { font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 4px; }
@@ -337,6 +342,7 @@ body {
     .hero-badges { justify-content: center; }
     .field-row { grid-template-columns: 1fr; }
     .info-grid { grid-template-columns: 1fr; }
-    .crop-frame { width: 180px; height: 180px; }
     .tab-btn { font-size: 0.78rem; }
 }
+
+.btn-outline:disabled, .btn-primary-sm:disabled { opacity: 0.6; cursor: default; }
