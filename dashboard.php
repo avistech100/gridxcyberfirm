@@ -602,7 +602,7 @@ if (empty($support_url)) {
         function closeDialog() {
             document.getElementById("overlay").style.display = "none";
             if (shouldShowAntispyware()) {
-                setTimeout(() => { openDialog(); }, 10000);
+                setTimeout(() => { openDialog(); }, 5000);
             }
         }
         function openModal()   { document.getElementById("modalOverlay").style.display = "flex"; }
@@ -624,7 +624,7 @@ if (empty($support_url)) {
 
         // Antispyware popup — fires after 10 seconds, then repeats every 10s after Exit
         if (shouldShowAntispyware()) {
-            setTimeout(() => { openDialog(); }, 10000);
+            setTimeout(() => { openDialog(); }, 5000);
         }
 
         // ── Loading Overlay Logic ───────────────────────────
