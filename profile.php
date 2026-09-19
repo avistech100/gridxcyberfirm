@@ -57,24 +57,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     verify_csrf();
     $first_name = trim($_POST['first_name'] ?? '');
     $last_name  = trim($_POST['last_name']  ?? '');
-    $email      = trim($_POST['email']      ?? '');
 
-    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $errors[] = 'A valid email address is required.';
+    $db->prepare('UPDATE user_gridxuser SET first_name=?, last_name=? WHERE id=?')
+       ->execute([$first_name, $last_name, $user_id]);
+    $user = current_user(); // refresh
+    $success = 'Account information updated.';
+}
+
+// ── Handle remove photo ────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'remove_photo') {
+    verify_csrf();
+    if (!empty($user['profile_picture'])) {
+        $old = __DIR__ . $user['profile_picture'];
+        if (file_exists($old)) @unlink($old);
     }
-    if (!$errors) {
-        // Check email uniqueness
-        $chk = $db->prepare('SELECT id FROM user_gridxuser WHERE email=? AND id!=?');
-        $chk->execute([$email, $user_id]);
-        if ($chk->fetch()) {
-            $errors[] = 'That email address is already in use.';
-        } else {
-            $db->prepare('UPDATE user_gridxuser SET first_name=?, last_name=?, email=? WHERE id=?')
-               ->execute([$first_name, $last_name, $email, $user_id]);
-            $user = current_user(); // refresh
-            $success = 'Account information updated.';
-        }
-    }
+    $db->prepare('UPDATE user_gridxuser SET profile_picture=NULL WHERE id=?')->execute([$user_id]);
+    $user = current_user(); // refresh
+    $success = 'Profile picture removed successfully.';
+    $avatar = '';
 }
 
 // ── Handle password change ─────────────────────────────────
@@ -155,6 +155,11 @@ $joined     = $user['date_joined']     ?? '';
             <div class="avatar-wrap">
                 <?php if ($avatar): ?>
                 <img src="<?= e($avatar) ?>?v=<?= time() ?>" alt="Profile picture" class="avatar-img" id="avatarPreview">
+                <form method="post" action="/profile.php" class="form-remove-photo" id="removePhotoForm" onsubmit="return confirm('Remove your profile picture?');">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="action" value="remove_photo">
+                    <button type="submit" class="avatar-remove-btn" title="Remove photo"><i class="fa-solid fa-trash-can"></i></button>
+                </form>
                 <?php else: ?>
                 <div class="avatar-placeholder" id="avatarPreview">
                     <i class="fa-solid fa-user"></i>
@@ -216,18 +221,21 @@ $joined     = $user['date_joined']     ?? '';
         <!-- ── TAB: ACCOUNT INFO ── -->
         <div class="tab-pane active" id="tab-info">
             <div class="card-section">
-                <h3 class="section-title"><i class="fa-solid fa-user-pen"></i> Personal Information</h3>
+                <h3 class="section-title">
+                    <span><i class="fa-solid fa-user-pen"></i> Personal Information</span>
+                    <button type="button" class="btn-edit-pencil" id="editNameBtn" title="Edit name"><i class="fa-solid fa-pen"></i></button>
+                </h3>
                 <form method="post" action="/profile.php">
                     <?= csrf_field() ?>
                     <input type="hidden" name="action" value="update_info">
                     <div class="field-row">
                         <div class="form-group">
                             <label>First Name</label>
-                            <input type="text" name="first_name" value="<?= e($first_name) ?>" placeholder="First name">
+                            <input type="text" name="first_name" id="inpFirstName" value="<?= e($first_name) ?>" placeholder="First name" <?= $first_name ? 'readonly class="input-readonly"' : '' ?>>
                         </div>
                         <div class="form-group">
                             <label>Last Name</label>
-                            <input type="text" name="last_name" value="<?= e($last_name) ?>" placeholder="Last name">
+                            <input type="text" name="last_name" id="inpLastName" value="<?= e($last_name) ?>" placeholder="Last name" <?= $last_name ? 'readonly class="input-readonly"' : '' ?>>
                         </div>
                     </div>
                     <div class="form-group">
@@ -237,9 +245,12 @@ $joined     = $user['date_joined']     ?? '';
                     </div>
                     <div class="form-group">
                         <label>Email Address</label>
-                        <input type="email" name="email" value="<?= e($email) ?>" required placeholder="you@example.com">
+                        <input type="email" value="<?= e($email) ?>" disabled class="input-disabled">
                     </div>
-                    <button type="submit" class="btn-submit">Save Changes</button>
+                    <div id="infoFormActions" style="display:<?= ($first_name && $last_name) ? 'none' : 'flex' ?>; gap:10px; margin-top:0.4rem;">
+                        <button type="submit" class="btn-submit" style="margin-top:0;">Save Changes</button>
+                        <button type="button" class="btn-outline" id="cancelEditBtn" style="margin-top:0; <?= ($first_name && $last_name) ? '' : 'display:none;' ?>">Cancel</button>
+                    </div>
                 </form>
             </div>
 
@@ -323,6 +334,44 @@ $joined     = $user['date_joined']     ?? '';
 </div><!-- /profile-shell -->
 
 <script>
+// ── Edit Pencil ───────────────────────────────────────────
+const editNameBtn = document.getElementById('editNameBtn');
+const cancelEditBtn = document.getElementById('cancelEditBtn');
+const inpFirstName = document.getElementById('inpFirstName');
+const inpLastName = document.getElementById('inpLastName');
+const infoFormActions = document.getElementById('infoFormActions');
+
+let origFirstName = inpFirstName ? inpFirstName.value : '';
+let origLastName = inpLastName ? inpLastName.value : '';
+
+if (editNameBtn) {
+    if (!inpFirstName.hasAttribute('readonly')) {
+        editNameBtn.style.display = 'none';
+    }
+    editNameBtn.addEventListener('click', () => {
+        inpFirstName.removeAttribute('readonly');
+        inpLastName.removeAttribute('readonly');
+        inpFirstName.classList.remove('input-readonly');
+        inpLastName.classList.remove('input-readonly');
+        infoFormActions.style.display = 'flex';
+        cancelEditBtn.style.display = 'inline-block';
+        editNameBtn.style.display = 'none';
+        inpFirstName.focus();
+    });
+}
+if (cancelEditBtn) {
+    cancelEditBtn.addEventListener('click', () => {
+        inpFirstName.setAttribute('readonly', 'readonly');
+        inpLastName.setAttribute('readonly', 'readonly');
+        inpFirstName.classList.add('input-readonly');
+        inpLastName.classList.add('input-readonly');
+        inpFirstName.value = origFirstName;
+        inpLastName.value = origLastName;
+        infoFormActions.style.display = 'none';
+        editNameBtn.style.display = 'inline-block';
+    });
+}
+
 // ── Tabs ──────────────────────────────────────────────────
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', function() {
@@ -377,6 +426,7 @@ if (pwConfirm) {
 
 // ── Profile picture upload & crop ────────────────────────
 let cropScale = 1, cropStartX = 0, cropStartY = 0, cropX = 0, cropY = 0, isDragging = false;
+let baseW = 220, baseH = 220;
 let originalFile = null;
 
 document.getElementById('profilePicInput').addEventListener('change', function() {
@@ -389,11 +439,27 @@ document.getElementById('profilePicInput').addEventListener('change', function()
     const reader = new FileReader();
     reader.onload = e => {
         const img = document.getElementById('cropImg');
+        img.onload = () => {
+            const aspect = img.naturalWidth / img.naturalHeight;
+            if (aspect > 1) { // Landscape
+                baseH = 220;
+                baseW = 220 * aspect;
+            } else { // Portrait or square
+                baseW = 220;
+                baseH = 220 / aspect;
+            }
+            img.style.width = baseW + 'px';
+            img.style.height = baseH + 'px';
+            
+            // Center the image initially
+            cropX = (220 - baseW) / 2;
+            cropY = (220 - baseH) / 2;
+            cropScale = 1;
+            document.getElementById('cropZoom').value = 1;
+            updateCropTransform();
+            document.getElementById('cropModal').style.display = 'flex';
+        };
         img.src = e.target.result;
-        cropX = 0; cropY = 0; cropScale = 1;
-        document.getElementById('cropZoom').value = 1;
-        updateCropTransform();
-        document.getElementById('cropModal').style.display = 'flex';
     };
     reader.readAsDataURL(file);
 });
@@ -404,20 +470,43 @@ function updateCropTransform() {
 }
 
 document.getElementById('cropZoom').addEventListener('input', function() {
-    cropScale = parseFloat(this.value);
+    const newScale = parseFloat(this.value);
+    const cx = 110, cy = 110; // center of 220x220 frame
+    cropX = cx - (cx - cropX) * (newScale / cropScale);
+    cropY = cy - (cy - cropY) * (newScale / cropScale);
+    cropScale = newScale;
+    
+    clampCrop();
     updateCropTransform();
 });
 
-const cropImg = document.getElementById('cropImg');
-cropImg.addEventListener('mousedown', startDrag);
-cropImg.addEventListener('touchstart', e => { const t = e.touches[0]; startDrag({clientX:t.clientX,clientY:t.clientY}); }, {passive:true});
-document.addEventListener('mousemove', doDrag);
-document.addEventListener('touchmove', e => { if(!isDragging)return; const t=e.touches[0]; doDrag({clientX:t.clientX,clientY:t.clientY}); e.preventDefault(); }, {passive:false});
-document.addEventListener('mouseup', ()=>{isDragging=false;});
-document.addEventListener('touchend', ()=>{isDragging=false;});
+function clampCrop() {
+    const minX = 220 - (baseW * cropScale);
+    const minY = 220 - (baseH * cropScale);
+    cropX = Math.min(0, Math.max(minX, cropX));
+    cropY = Math.min(0, Math.max(minY, cropY));
+}
 
-function startDrag(e) { isDragging=true; cropStartX=e.clientX-cropX; cropStartY=e.clientY-cropY; }
-function doDrag(e) { if(!isDragging)return; cropX=e.clientX-cropStartX; cropY=e.clientY-cropStartY; updateCropTransform(); }
+const cropFrame = document.getElementById('cropFrame');
+cropFrame.addEventListener('pointerdown', e => {
+    isDragging = true;
+    cropFrame.setPointerCapture(e.pointerId);
+    cropStartX = e.clientX - cropX;
+    cropStartY = e.clientY - cropY;
+    cropFrame.style.cursor = 'grabbing';
+    e.preventDefault();
+});
+cropFrame.addEventListener('pointermove', e => {
+    if (!isDragging) return;
+    cropX = e.clientX - cropStartX;
+    cropY = e.clientY - cropStartY;
+    clampCrop();
+    updateCropTransform();
+    e.preventDefault();
+});
+const stopDrag = () => { isDragging = false; cropFrame.style.cursor = 'grab'; };
+cropFrame.addEventListener('pointerup', stopDrag);
+cropFrame.addEventListener('pointercancel', stopDrag);
 
 function cancelCrop() {
     document.getElementById('cropModal').style.display='none';
@@ -425,10 +514,8 @@ function cancelCrop() {
 }
 
 function applyCrop() {
-    const frame = document.getElementById('cropFrame');
-    const img   = document.getElementById('cropImg');
-    const size  = frame.offsetWidth; // square crop frame
-
+    const img = document.getElementById('cropImg');
+    
     const canvas = document.createElement('canvas');
     canvas.width  = 400;
     canvas.height = 400;
@@ -438,17 +525,11 @@ function applyCrop() {
     ctx.arc(200, 200, 200, 0, Math.PI*2);
     ctx.clip();
 
-    const naturalW = img.naturalWidth;
-    const naturalH = img.naturalHeight;
-    const displayW = img.offsetWidth  * cropScale;
-    const displayH = img.offsetHeight * cropScale;
-    const scaleX   = naturalW / (img.offsetWidth);
-    const scaleY   = naturalH / (img.offsetHeight);
-
-    const sx = (-cropX / cropScale) * scaleX;
-    const sy = (-cropY / cropScale) * scaleY;
-    const sw = (size   / cropScale) * scaleX;
-    const sh = (size   / cropScale) * scaleY;
+    const scaleToNatural = img.naturalWidth / (baseW * cropScale);
+    const sx = -cropX * scaleToNatural;
+    const sy = -cropY * scaleToNatural;
+    const sw = 220 * scaleToNatural;
+    const sh = 220 * scaleToNatural;
 
     ctx.drawImage(img, sx, sy, sw, sh, 0, 0, 400, 400);
 

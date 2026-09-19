@@ -115,6 +115,20 @@ body {
 }
 .avatar-edit-btn:hover { transform: scale(1.12); }
 
+.form-remove-photo { position: absolute; bottom: 2px; left: 2px; margin: 0; }
+.avatar-remove-btn {
+    width: 28px; height: 28px;
+    background: #fff;
+    border-radius: 50%; border: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 0.75rem;
+    color: var(--danger);
+    box-shadow: 0 1px 6px rgba(0,0,0,0.2);
+    transition: transform 0.2s;
+}
+.avatar-remove-btn:hover { transform: scale(1.12); }
+
 .hero-info { flex: 1; min-width: 0; }
 .hero-info h2 { color: #fff; font-size: 1.3rem; font-weight: 700; margin-bottom: 0.2rem; word-break: break-word; }
 .hero-email { color: rgba(255,255,255,0.78); font-size: 0.85rem; margin-bottom: 0.7rem; word-break: break-all; }
@@ -156,12 +170,12 @@ body {
     border: 3px solid var(--accent);
     background: #eee;
     cursor: grab;
+    touch-action: none;
 }
 .crop-frame:active { cursor: grabbing; }
 .crop-frame img {
     position: absolute; top: 0; left: 0;
-    width: 100%; height: auto;
-    transform-origin: center;
+    transform-origin: 0 0;
     user-select: none;
     -webkit-user-drag: none;
     pointer-events: none;
@@ -218,11 +232,19 @@ body {
 .section-title {
     font-size: 0.95rem; font-weight: 700;
     color: var(--accent);
-    display: flex; align-items: center; gap: 8px;
+    display: flex; align-items: center; justify-content: space-between;
     margin-bottom: 1.2rem;
     padding-bottom: 0.7rem;
     border-bottom: 1px solid var(--border);
 }
+.section-title > span { display: flex; align-items: center; gap: 8px; }
+.btn-edit-pencil {
+    background: none; border: none;
+    color: var(--text-muted); cursor: pointer;
+    font-size: 1.05rem; padding: 4px;
+    border-radius: 4px; transition: color 0.2s;
+}
+.btn-edit-pencil:hover { color: var(--accent); }
 
 /* ── Form ── */
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
@@ -254,6 +276,15 @@ body {
     box-shadow: 0 0 0 3px rgba(30,47,111,0.1);
 }
 .input-disabled { opacity: 0.55; cursor: not-allowed !important; }
+.input-readonly {
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    padding-left: 0 !important;
+    color: var(--text-dark) !important;
+    outline: none !important;
+}
+.input-readonly:focus { box-shadow: none !important; }
 .form-group small { display: block; font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; }
 
 /* Password wrap */
