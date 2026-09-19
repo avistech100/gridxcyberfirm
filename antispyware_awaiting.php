@@ -31,15 +31,38 @@ if (!$sub) redirect('/antispyware.php');
 </head>
 <body style="background:#f0f2f9;font-family:'Rubik',sans-serif;">
 <div class="await-card">
-    <div class="await-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
-    <div class="await-plan-badge"><i class="fa-solid fa-shield-check"></i> <?= e($sub['plan_label']) ?> — $<?= number_format((float)$sub['amount'],2) ?></div>
-    <h2>Payment Submitted — Awaiting Confirmation</h2>
-    <p>Your antispyware subscription payment has been received and is currently being reviewed by our team. You will be notified once your plan is activated.</p>
-    <div class="await-refund">
-        <i class="fa-solid fa-rotate-left"></i>
-        <span>If your subscription is confirmed and you wish to cancel, a <strong>full refund</strong> will be processed promptly. Your payment is fully protected.</span>
-    </div>
-    <a href="/dashboard.php" class="await-btn"><i class="fa-solid fa-gauge"></i> Back to Dashboard</a>
+    <?php if ($sub['is_approved'] === 'success'): ?>
+        <div class="await-icon" style="color:#16a34a;animation:none;"><i class="fa-solid fa-circle-check"></i></div>
+        <div class="await-plan-badge" style="background:#16a34a;"><i class="fa-solid fa-shield-check"></i> <?= e($sub['plan_label']) ?> — Active</div>
+        <h2>Protection Activated Successfully</h2>
+        <p>Your antispyware subscription is now fully active. Your system is protected and normal operation has been restored.</p>
+        <div class="await-refund" style="background:#f0fdf4;border-color:#bbf7d0;color:#166534;">
+            <i class="fa-solid fa-shield-halved"></i>
+            <span>Your protection coverage: <strong><?= e($sub['duration']) ?></strong>. Instant Refund Guarantee remains valid.</span>
+        </div>
+        <a href="/dashboard.php" class="await-btn" style="background:#16a34a;"><i class="fa-solid fa-arrow-left"></i> Return to Dashboard</a>
+
+    <?php elseif ($sub['is_approved'] === 'failed'): ?>
+        <div class="await-icon" style="color:#dc2626;animation:none;"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <div class="await-plan-badge" style="background:#dc2626;"><i class="fa-solid fa-times-circle"></i> Verification Failed</div>
+        <h2>Payment Verification Unsuccessful</h2>
+        <p>We could not verify your payment submission. Please retry with a valid transaction or contact customer support for assistance.</p>
+        <div style="display:flex;gap:10px;justify-content:center;margin-top:1.5rem;">
+            <a href="/antispyware.php" class="await-btn" style="background:#2563eb;"><i class="fa-solid fa-rotate-right"></i> Choose Plan</a>
+            <a href="/dashboard.php" class="await-btn" style="background:#64748b;"><i class="fa-solid fa-house"></i> Dashboard</a>
+        </div>
+
+    <?php else: ?>
+        <div class="await-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
+        <div class="await-plan-badge"><i class="fa-solid fa-shield-check"></i> <?= e($sub['plan_label']) ?> — $<?= number_format((float)$sub['amount'],2) ?></div>
+        <h2>Payment Submitted — Awaiting Confirmation</h2>
+        <p>Your antispyware subscription payment has been received and is currently being reviewed by our team. You will be notified once your plan is activated.</p>
+        <div class="await-refund">
+            <i class="fa-solid fa-rotate-left"></i>
+            <span>If your subscription is confirmed and you wish to cancel, a <strong>full refund</strong> will be processed promptly. Your payment is fully protected.</span>
+        </div>
+        <a href="/dashboard.php" class="await-btn"><i class="fa-solid fa-gauge"></i> Back to Dashboard</a>
+    <?php endif; ?>
 </div>
 </body>
 </html>

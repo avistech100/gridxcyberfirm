@@ -225,3 +225,10 @@ HTML;
 function set_active_nav(string $section): void {
     $_ENV['ACTIVE_NAV'][$section] = 'active';
 }
+
+// Convenience wrapper combining head, body_open, and content_header
+function admin_header(string $title = 'Dashboard', array $breadcrumbs = []): void {
+    admin_head($title);
+    admin_body_open();
+    admin_content_header($title, $breadcrumbs);
+}
