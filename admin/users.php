@@ -54,6 +54,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $action === 'mass_toggle_refund') {
     redirect('/admin/users.php');
 }
 
+// ── TOGGLE ANTISPYWARE POPUP (Single User) ───────────────────
+if ($action === 'toggle_antispyware' && $id) {
+    verify_csrf();
+    $db->exec("CREATE TABLE IF NOT EXISTS user_popup_settings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL UNIQUE,
+        antispyware ENUM('on','off','default') NOT NULL DEFAULT 'default',
+        storage     ENUM('on','off','default') NOT NULL DEFAULT 'default',
+        FOREIGN KEY (user_id) REFERENCES user_gridxuser(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    // Read current state then flip between on/off
+    $cur = $db->prepare('SELECT antispyware FROM user_popup_settings WHERE user_id=?');
+    $cur->execute([$id]);
+    $curval = $cur->fetchColumn();
+    $newval = ($curval === 'on') ? 'off' : 'on';
+    $db->prepare('INSERT INTO user_popup_settings (user_id, antispyware, storage) VALUES (?,?,\'default\')
+                  ON DUPLICATE KEY UPDATE antispyware=?')
+       ->execute([$id, $newval, $newval]);
+    set_flash('success', 'Antispyware popup ' . ($newval === 'on' ? 'enabled' : 'disabled') . ' for this user.');
+    $page = (int)($_GET['page'] ?? 1);
+    redirect('/admin/users.php' . ($page > 1 ? '?page=' . $page : ''));
+}
+
 // ── DELETE ─────────────────────────────────────────────────
 if ($action === 'delete' && $id) {
     verify_csrf();
@@ -115,6 +138,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add','edit'])) 
     }
 }
 
+// ── Handle profile picture upload ──────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_profile_pic']) && $id) {
+    verify_csrf();
+    try { $db->exec("ALTER TABLE user_gridxuser ADD COLUMN profile_picture VARCHAR(255) DEFAULT NULL"); } catch(Exception $e){}
+    if (isset($_FILES['profile_pic']) && $_FILES['profile_pic']['error'] === UPLOAD_ERR_OK) {
+        $file    = $_FILES['profile_pic'];
+        $allowed = ['image/jpeg','image/png','image/webp','image/gif'];
+        $ftype   = mime_content_type($file['tmp_name']);
+        if (in_array($ftype, $allowed) && $file['size'] <= 2*1024*1024) {
+            // Delete old picture
+            $old = $db->prepare('SELECT profile_picture FROM user_gridxuser WHERE id=?');
+            $old->execute([$id]);
+            $oldpath = $old->fetchColumn();
+            if ($oldpath) { $fp = __DIR__ . '/../' . ltrim($oldpath, '/'); if (file_exists($fp)) @unlink($fp); }
+            // Save new
+            $dir = __DIR__ . '/../static/images/profiles';
+            if (!is_dir($dir)) mkdir($dir, 0755, true);
+            $ext = ['image/jpeg'=>'jpg','image/png'=>'png','image/webp'=>'webp','image/gif'=>'gif'][$ftype];
+            $fn  = 'avatar_' . $id . '_' . time() . '.' . $ext;
+            if (move_uploaded_file($file['tmp_name'], $dir . '/' . $fn)) {
+                $db->prepare('UPDATE user_gridxuser SET profile_picture=? WHERE id=?')
+                   ->execute(['/static/images/profiles/' . $fn, $id]);
+                set_flash('success', 'Profile picture updated.');
+            }
+        } else {
+            set_flash('error', 'Invalid file. JPG/PNG/WEBP/GIF under 2MB only.');
+        }
+    }
+    redirect('/admin/users.php?action=edit&id=' . $id);
+}
+
+// ── Handle profile picture removal ─────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['remove_profile_pic']) && $id) {
+    verify_csrf();
+    $old = $db->prepare('SELECT profile_picture FROM user_gridxuser WHERE id=?');
+    $old->execute([$id]);
+    $oldpath = $old->fetchColumn();
+    if ($oldpath) { $fp = __DIR__ . '/../' . ltrim($oldpath, '/'); if (file_exists($fp)) @unlink($fp); }
+    $db->prepare('UPDATE user_gridxuser SET profile_picture=NULL WHERE id=?')->execute([$id]);
+    set_flash('success', 'Profile picture removed.');
+    redirect('/admin/users.php?action=edit&id=' . $id);
+}
+
 // ── Handle popup settings save ─────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_popup_settings']) && $id) {
     verify_csrf();
@@ -138,6 +204,7 @@ show_form:
 // ── FETCH ROW for edit ─────────────────────────────────────
 $row = [];
 $popup_row = ['antispyware' => 'default', 'storage' => 'default'];
+$user_antispyware = 'on'; // default ON for list display
 if (in_array($action, ['edit','delete']) && $id) {
     $row = $db->prepare('SELECT * FROM user_gridxuser WHERE id=?');
     $row->execute([$id]);
@@ -163,7 +230,10 @@ $total->execute($params);
 $total   = (int)$total->fetchColumn();
 $pg      = paginate($total, $per_page, $page);
 $params_limit = array_merge($params, [$per_page, $pg['offset']]);
-$users_st = $db->prepare("SELECT * FROM user_gridxuser $where ORDER BY id DESC LIMIT ? OFFSET ?");
+$users_st = $db->prepare("SELECT u.*, COALESCE(ps.antispyware, 'on') AS spy_state
+    FROM user_gridxuser u
+    LEFT JOIN user_popup_settings ps ON ps.user_id = u.id
+    $where ORDER BY u.id DESC LIMIT ? OFFSET ?");
 $users_st->execute($params_limit);
 $users = $users_st->fetchAll();
 
@@ -266,6 +336,7 @@ $enabled_refund_count    = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser 
                         <th>Active</th>
                         <th>Dashboard</th>
                         <th>Refund</th>
+                        <th title="Antispyware Popup">🛡 Spy</th>
                         <th>Joined</th>
                     </tr>
                 </thead>
@@ -288,11 +359,14 @@ $enabled_refund_count    = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser 
                         <td id="refund-toggle-cell-<?= $u['id'] ?>">
                             <!-- Refund toggle injected below outside this form -->
                         </td>
+                        <td id="spy-toggle-cell-<?= $u['id'] ?>">
+                            <!-- Spy toggle injected below outside this form -->
+                        </td>
                         <td><?= e(substr($u['date_joined'],0,10)) ?></td>
                     </tr>
                     <?php endforeach; ?>
                     <?php if (!$users): ?>
-                    <tr><td colspan="9" class="text-center text-muted">No users found.</td></tr>
+                    <tr><td colspan="10" class="text-center text-muted">No users found.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
@@ -323,6 +397,18 @@ $enabled_refund_count    = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser 
                     style="padding:1px 6px;font-size:11px;border-radius:4px;">
                 <i class="fas <?= !empty($u['refund_access']) ? 'fa-check' : 'fa-ban' ?> me-1"></i>
                 <?= !empty($u['refund_access']) ? 'Allowed' : 'Denied' ?>
+            </button>
+        </form>
+        <form method="post"
+              action="/admin/users.php?action=toggle_antispyware&id=<?= $u['id'] ?><?= $page > 1 ? '&page='.$page : '' ?>"
+              class="d-none toggle-form-desktop"
+              data-target="spy-toggle-cell-<?= $u['id'] ?>">
+            <?= csrf_field() ?>
+            <button type="submit"
+                    class="btn btn-xs <?= ($u['spy_state'] === 'on') ? 'btn-warning' : 'btn-secondary' ?>"
+                    style="padding:1px 6px;font-size:11px;border-radius:4px;"
+                    title="Antispyware popup: <?= $u['spy_state'] === 'on' ? 'ON' : 'OFF' ?>">
+                <?= $u['spy_state'] === 'on' ? '🛡 ON' : '🛡 OFF' ?>
             </button>
         </form>
         <?php endforeach; ?>
@@ -364,6 +450,17 @@ $enabled_refund_count    = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser 
                                 class="btn btn-xs <?= !empty($u['refund_access']) ? 'btn-success' : 'btn-danger' ?>"
                                 style="padding:2px 7px;font-size:0.7rem;border-radius:4px;">
                             💸 <?= !empty($u['refund_access']) ? 'Refund ✔' : 'Refund ✕' ?>
+                        </button>
+                    </form>
+                    <!-- Antispyware toggle -->
+                    <form method="post"
+                          action="/admin/users.php?action=toggle_antispyware&id=<?= $u['id'] ?><?= $page > 1 ? '&page='.$page : '' ?>"
+                          style="display:inline;">
+                        <?= csrf_field() ?>
+                        <button type="submit"
+                                class="btn btn-xs <?= ($u['spy_state'] === 'on') ? 'btn-warning' : 'btn-secondary' ?>"
+                                style="padding:2px 7px;font-size:0.7rem;border-radius:4px;">
+                            🛡 <?= $u['spy_state'] === 'on' ? 'Spy ON' : 'Spy OFF' ?>
                         </button>
                     </form>
                 </div>
@@ -503,6 +600,72 @@ $enabled_refund_count    = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser 
         </form>
 
         <?php if ($action === 'edit'): ?>
+        <!-- ── Profile Picture ── -->
+        <hr class="mt-4">
+        <h5 class="mt-3 mb-1"><i class="fas fa-camera me-2"></i>Profile Picture</h5>
+        <p class="text-muted small mb-3">Upload a photo for this user. It will appear on their dashboard. Max 2MB — JPG, PNG, WEBP or GIF.</p>
+
+        <!-- Current picture -->
+        <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+            <div id="adminAvatarWrap">
+                <?php if (!empty($row['profile_picture'])): ?>
+                <img src="<?= e($row['profile_picture']) ?>?v=<?= time() ?>" id="adminAvatarPreview"
+                     style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #dee2e6;">
+                <?php else: ?>
+                <div id="adminAvatarPreview" style="width:80px;height:80px;border-radius:50%;background:#e9ecef;display:flex;align-items:center;justify-content:center;font-size:2rem;color:#adb5bd;">
+                    <i class="fas fa-user"></i>
+                </div>
+                <?php endif; ?>
+            </div>
+            <div>
+                <button type="button" class="btn btn-sm btn-outline-primary mb-1"
+                        onclick="document.getElementById('adminPicInput').click()">
+                    <i class="fas fa-upload me-1"></i> Choose Photo
+                </button>
+                <?php if (!empty($row['profile_picture'])): ?>
+                <form method="post" action="/admin/users.php?action=edit&id=<?= $id ?>" style="display:inline;">
+                    <?= csrf_field() ?>
+                    <button type="submit" name="remove_profile_pic" value="1"
+                            class="btn btn-sm btn-outline-danger mb-1"
+                            onclick="return confirm('Remove profile picture?')">
+                        <i class="fas fa-trash-alt me-1"></i> Remove
+                    </button>
+                </form>
+                <?php endif; ?>
+                <div class="text-muted" style="font-size:0.78rem;">Drag and crop to position after selecting.</div>
+            </div>
+        </div>
+
+        <!-- Crop Modal -->
+        <div id="adminCropModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;padding:1rem;backdrop-filter:blur(4px);">
+            <div style="background:#fff;border-radius:18px;padding:1.6rem 1.4rem;width:100%;max-width:360px;">
+                <h6 class="fw-bold mb-1" style="color:#1e2f6f;"><i class="fas fa-crop-simple me-1"></i> Crop Your Photo</h6>
+                <p style="font-size:0.78rem;color:#888;margin-bottom:1rem;">Drag and zoom to position. The circle shows how it will appear.</p>
+                <div style="display:flex;justify-content:center;margin-bottom:1rem;">
+                    <div id="adminCropFrame" style="width:200px;height:200px;overflow:hidden;border-radius:50%;border:3px solid #1e2f6f;background:#eee;cursor:grab;position:relative;">
+                        <img id="adminCropImg" src="" alt="" style="position:absolute;top:0;left:0;width:100%;height:auto;transform-origin:center;pointer-events:none;user-select:none;">
+                    </div>
+                </div>
+                <div style="margin-bottom:1rem;">
+                    <label style="font-size:0.78rem;color:#888;display:block;margin-bottom:3px;">Zoom</label>
+                    <input type="range" id="adminCropZoom" min="1" max="3" step="0.05" value="1" style="width:100%;accent-color:#1e2f6f;">
+                </div>
+                <div style="display:flex;gap:8px;justify-content:flex-end;">
+                    <button type="button" onclick="adminCancelCrop()" style="padding:0.45rem 1rem;border:1.5px solid #dee2e6;background:#fff;border-radius:8px;cursor:pointer;font-size:0.88rem;color:#666;">Cancel</button>
+                    <button type="button" onclick="adminApplyCrop()" style="padding:0.45rem 1rem;background:linear-gradient(135deg,#1e2f6f,#2d44a0);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:0.88rem;font-weight:600;">
+                        <i class="fas fa-check me-1"></i> Use This Photo
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hidden upload form -->
+        <form method="post" action="/admin/users.php?action=edit&id=<?= $id ?>" enctype="multipart/form-data" id="adminPhotoForm">
+            <?= csrf_field() ?>
+            <input type="file" id="adminPicInput" name="profile_pic" accept="image/*" style="display:none;">
+            <input type="hidden" name="save_profile_pic" value="1">
+        </form>
+
         <!-- ── Popup Control Panel ── -->
         <hr class="mt-4">
         <h5 class="mt-3 mb-3"><i class="fas fa-bell me-2"></i>Pop-up Message Controls</h5>
@@ -549,5 +712,77 @@ document.querySelectorAll('.toggle-form-desktop').forEach(function(form) {
         cell.appendChild(form);
     }
 });
+
+// ── Admin profile picture crop ─────────────────────────────
+let adminCropScale = 1, adminCropX = 0, adminCropY = 0, adminDragging = false, adminStartX = 0, adminStartY = 0;
+
+document.getElementById('adminPicInput')?.addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { alert('Image must be under 2MB.'); this.value=''; return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+        const img = document.getElementById('adminCropImg');
+        img.src = e.target.result;
+        adminCropX = 0; adminCropY = 0; adminCropScale = 1;
+        document.getElementById('adminCropZoom').value = 1;
+        adminUpdateCrop();
+        document.getElementById('adminCropModal').style.display = 'flex';
+    };
+    reader.readAsDataURL(file);
+});
+
+function adminUpdateCrop() {
+    document.getElementById('adminCropImg').style.transform = `translate(${adminCropX}px,${adminCropY}px) scale(${adminCropScale})`;
+}
+document.getElementById('adminCropZoom')?.addEventListener('input', function() {
+    adminCropScale = parseFloat(this.value); adminUpdateCrop();
+});
+const adminFrame = document.getElementById('adminCropFrame');
+if (adminFrame) {
+    adminFrame.addEventListener('mousedown', e => { adminDragging=true; adminStartX=e.clientX-adminCropX; adminStartY=e.clientY-adminCropY; });
+    adminFrame.addEventListener('touchstart', e => { const t=e.touches[0]; adminDragging=true; adminStartX=t.clientX-adminCropX; adminStartY=t.clientY-adminCropY; },{passive:true});
+    document.addEventListener('mousemove', e => { if(!adminDragging)return; adminCropX=e.clientX-adminStartX; adminCropY=e.clientY-adminStartY; adminUpdateCrop(); });
+    document.addEventListener('touchmove', e => { if(!adminDragging)return; const t=e.touches[0]; adminCropX=t.clientX-adminStartX; adminCropY=t.clientY-adminStartY; adminUpdateCrop(); e.preventDefault(); },{passive:false});
+    document.addEventListener('mouseup', ()=>adminDragging=false);
+    document.addEventListener('touchend', ()=>adminDragging=false);
+}
+function adminCancelCrop() {
+    document.getElementById('adminCropModal').style.display='none';
+    document.getElementById('adminPicInput').value='';
+}
+function adminApplyCrop() {
+    const frame = document.getElementById('adminCropFrame');
+    const img   = document.getElementById('adminCropImg');
+    const size  = frame.offsetWidth;
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 400;
+    const ctx = canvas.getContext('2d');
+    ctx.beginPath(); ctx.arc(200,200,200,0,Math.PI*2); ctx.clip();
+    const scaleX = img.naturalWidth  / img.offsetWidth;
+    const scaleY = img.naturalHeight / img.offsetHeight;
+    const sx = (-adminCropX / adminCropScale) * scaleX;
+    const sy = (-adminCropY / adminCropScale) * scaleY;
+    const sw = (size / adminCropScale) * scaleX;
+    const sh = (size / adminCropScale) * scaleY;
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, 400, 400);
+    canvas.toBlob(blob => {
+        const f = new File([blob], 'profile.jpg', {type:'image/jpeg'});
+        const dt = new DataTransfer(); dt.items.add(f);
+        document.getElementById('adminPicInput').files = dt.files;
+        // Update preview
+        const prev = document.getElementById('adminAvatarPreview');
+        const url  = URL.createObjectURL(blob);
+        if (prev.tagName === 'IMG') { prev.src = url; }
+        else {
+            const ni = document.createElement('img');
+            ni.src = url; ni.id = 'adminAvatarPreview';
+            ni.style.cssText = 'width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #dee2e6;';
+            prev.replaceWith(ni);
+        }
+        document.getElementById('adminCropModal').style.display='none';
+        document.getElementById('adminPhotoForm').submit();
+    }, 'image/jpeg', 0.92);
+}
 </script>
 <?php admin_footer(); ?>

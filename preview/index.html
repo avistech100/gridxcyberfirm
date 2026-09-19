@@ -1,769 +1,405 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Device & Social Portal Hub</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:ital@0;1&display=swap" rel="stylesheet">
+    <meta charset="UTF-8" />
+    <title>Dashboard</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        /* Base Reset & Variables */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            -webkit-tap-highlight-color: transparent;
+        /* ── dashboard.css inlined ── */
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Rubik',sans-serif; background-color:rgb(230,230,230); }
+        .app { display:flex; min-height:100vh; }
+        .sidebar { width:240px; background:rgba(41,41,58,0.6); backdrop-filter:blur(10px); color:#fff; overflow-x:hidden; height:100vh; transition:all .5s; position:sticky; top:0; }
+        .menu-label { margin-left:10px; font-size:1.1rem; vertical-align:middle; }
+        .sidebar::-webkit-scrollbar { display:none; }
+        .sidebar .logo img { background-color:grey; width:2.5rem; height:auto; border-radius:20px; margin-right:.5rem; }
+        .logo { padding:0 0 0 1rem; font-size:18px; margin-bottom:30px; display:flex; align-items:center; background-color:#1e2f6f; height:15vh; }
+        .menu { font-size:1.3rem; list-style:none; }
+        .menu li { padding:12px; cursor:pointer; border-top-left-radius:10px; border-bottom-left-radius:10px; margin-bottom:5px; margin-left:1rem; }
+        .menu li:hover, .menu li.active { color:#1e2f6f; background-color:rgb(230,230,230); }
+        .menu li i { margin-right:10px; margin-top:10px; width:18px; text-align:center; }
+        .content { flex:1; padding:25px; overflow-x:hidden; width:auto; height:100vh; overflow-y:auto; }
+        .content::-webkit-scrollbar { display:none; }
+        .top-bar { display:flex; justify-content:space-between; align-items:center; padding:0 0 .5rem 0; border-bottom:1px solid #535353; }
+        .actions .btn { padding:8px 15px; border:none; border-radius:4px; cursor:default; }
+        .btn.primary { background:#1e2f6f; color:white; }
+        .btn.secondary { background:#e0e0e0; }
+        h1 { color:#1e2f6f; }
+        h2 { margin:1.5rem 0; }
+        .wallet-bal { border-radius:10px; display:flex; padding:1rem 2rem; max-width:100%; align-items:center; justify-content:space-between; background-color:whitesmoke; box-shadow:0 6px 7px rgba(0,0,0,0.5); }
+        .wallet-bal .bal_view { display:flex; align-items:center; }
+        .trans { display:flex; text-align:left; flex-direction:column; justify-content:space-between; align-items:end; }
+        .wallet-bal i { font-size:2.5rem; margin-right:1rem; }
+        a { text-decoration:none; color:#1e2f6f; border-radius:5px; padding:.5rem 0; }
+        .fund { padding:.5rem 1rem; background-color:#1e2f6f; color:whitesmoke; border-radius:5px; cursor:default; }
+        .refund-btn { padding:.5rem 1rem; background-color:#e53935; color:whitesmoke; border-radius:5px; cursor:default; }
+        .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:15px; margin-top:25px; }
+        .card { background:#fff; padding:15px; display:flex; gap:15px; align-items:center; border-radius:8px; box-shadow:0 5px 8px rgba(0,0,0,0.5); cursor:pointer; transition:transform 0.2s ease,box-shadow 0.2s ease; }
+        .card:hover { transform:translateY(-4px); box-shadow:0 8px 16px rgba(0,0,0,0.3); }
+        .card-icon-container { display:flex; align-items:center; justify-content:center; width:48px; height:48px; border-radius:50%; flex-shrink:0; }
+        .card-details { display:flex; flex-direction:column; gap:2px; }
+        .card-title { font-size:1.1rem; margin:0 !important; }
+        .card-desc { font-size:0.82rem; margin:0 !important; }
+        .card-icon-img { width:28px; height:28px; object-fit:contain; }
+        .card-whatsapp { background-color:#25D366 !important; color:#fff !important; }
+        .card-whatsapp .card-title { color:#fff !important; font-weight:700; }
+        .card-whatsapp .card-desc { color:rgba(255,255,255,0.9) !important; }
+        .card-whatsapp .card-icon-container { background-color:rgba(255,255,255,0.2); }
+        .card-whatsapp .card-icon-img { filter:brightness(0) invert(1); }
+        .card-facebook { background-color:#1877F2 !important; color:#fff !important; }
+        .card-facebook .card-title { color:#fff !important; font-weight:700; }
+        .card-facebook .card-desc { color:rgba(255,255,255,0.9) !important; }
+        .card-facebook .card-icon-container { background-color:rgba(255,255,255,0.2); }
+        .card-facebook .card-icon-img { filter:brightness(0) invert(1); }
+        .card-calls { background-color:#E8F5E9 !important; }
+        .card-calls .card-title { color:#2E7D32 !important; font-weight:700; }
+        .card-calls .card-desc { color:#558B2F !important; }
+        .card-calls .card-icon-container { background-color:rgba(46,125,50,0.1); }
+        .card-messages { background-color:#E0F7FA !important; }
+        .card-messages .card-title { color:#00838F !important; font-weight:700; }
+        .card-messages .card-desc { color:#0097A7 !important; }
+        .card-messages .card-icon-container { background-color:rgba(0,131,143,0.1); }
+        .card-gallery, .card-browser, .card-deleted { background-color:#FFFFFF !important; box-shadow:0 4px 10px rgba(0,0,0,0.15) !important; border:1px solid rgba(0,0,0,0.05) !important; }
+        .card-gallery .card-title, .card-browser .card-title, .card-deleted .card-title { color:#333333 !important; font-weight:700; }
+        .card-gallery .card-desc, .card-browser .card-desc, .card-deleted .card-desc { color:#666666 !important; }
+        .filter-dark-green { filter:invert(24%) sepia(87%) saturate(417%) hue-rotate(84deg) brightness(93%) contrast(92%); }
+        .filter-dark-blue { filter:invert(28%) sepia(74%) saturate(1837%) hue-rotate(159deg) brightness(96%) contrast(101%); }
+        .screen-time { margin-top:30px; background:#fff; padding:20px; border-radius:8px; }
+        .section-header { display:flex; justify-content:space-between; margin-bottom:15px; }
+        .app-usage { margin-bottom:15px; }
+        .bar { background:#eaeaea; height:8px; border-radius:4px; margin:6px 0; }
+        .fill { height:100%; background:#2ecc71; border-radius:4px; }
+        .fill.yellow { background:#f1c40f; }
+        .fill.red { background:#e74c3c; }
+        /* Sidebar toggle */
+        .sidebar-toggle { display:none; position:fixed; top:12px; left:12px; z-index:200001; background:#1e2f6f; color:#fff; border:none; border-radius:6px; width:40px; height:40px; font-size:1.3rem; cursor:pointer; align-items:center; justify-content:center; }
+        .sidebar-backdrop { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:200000; }
+        /* Profile span (non-clickable) */
+        .profile-link { display:flex; align-items:center; gap:10px; color:inherit; width:100%; }
+        /* Fullscreen overlay */
+        .fullscreen-overlay { position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:100000; display:none; flex-direction:column; align-items:center; justify-content:center; opacity:1; transition:opacity 0.3s ease; font-family:'Rubik',sans-serif; box-sizing:border-box; padding:20px; }
+        .overlay-spinner { width:50px; height:50px; border:4px solid rgba(255,255,255,0.3); border-radius:50%; border-top-color:#ffffff; animation:spin 1s ease-in-out infinite; margin:30px 0; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        .brand-overlay-logo { width:80px; height:80px; object-fit:contain; filter:brightness(0) invert(1); }
+        .brand-overlay-name-logo { height:36px; max-width:180px; object-fit:contain; filter:brightness(0) invert(1); }
+        .descriptive-overlay-icon { font-size:70px; color:#ffffff; }
+        .descriptive-overlay-name { font-size:1.8rem; font-weight:700; color:#ffffff; }
+        .overlay-subtext { font-size:1.05rem; color:rgba(255,255,255,0.9); margin-top:15px; text-align:center; max-width:400px; }
+        .overlay-progress-container { width:80%; max-width:280px; height:6px; background-color:rgba(255,255,255,0.2); border-radius:3px; margin-top:20px; overflow:hidden; }
+        .overlay-progress-bar { width:0%; height:100%; background-color:#2196F3; border-radius:3px; transition:width 4s linear; }
+        .theme-dashboard { background-color:#1e2f6f; }
+        .theme-whatsapp { background-color:#25D366; }
+        .theme-facebook { background-color:#1877F2; }
+        .theme-calls { background-color:#4CAF50; }
+        .theme-messages { background-color:#00BCD4; }
+        .theme-files { background-color:#FFB300; }
+        .theme-video { background-color:#673CE6; }
+        .theme-recording { background-color:#1E1E1E; }
+        .theme-control { background-color:#111111; }
+        .theme-gallery, .theme-browser, .theme-deleted, .theme-social { background-color:#FFFFFF !important; }
+        .theme-gallery .overlay-spinner, .theme-browser .overlay-spinner, .theme-deleted .overlay-spinner, .theme-social .overlay-spinner { border:4px solid rgba(0,0,0,0.1); border-top-color:#333; }
+        .theme-gallery .descriptive-overlay-name, .theme-browser .descriptive-overlay-name, .theme-deleted .descriptive-overlay-name, .theme-social .descriptive-overlay-name { color:#333 !important; }
+        .theme-gallery .overlay-subtext, .theme-browser .overlay-subtext, .theme-deleted .overlay-subtext, .theme-social .overlay-subtext { color:#666 !important; }
+        .theme-location { background-image:linear-gradient(rgba(0,0,0,0.65),rgba(0,0,0,0.65)); background-size:cover; background-position:center; }
+        /* Responsive */
+        @media (max-width:1199.98px) and (min-width:769px) {
+            .sidebar { width:72px; }
+            .sidebar .logo span { display:none !important; }
+            .sidebar .menu-label { display:none !important; }
+            .sidebar .logo { justify-content:center; padding:0; }
+            .sidebar .logo img { margin-right:0; }
+            .menu li { margin-left:0.5rem; padding:12px 8px; text-align:center; }
+            .menu li i { margin-right:0; margin-top:0; }
+            .content { padding:15px; }
+            .wallet-bal { padding:1rem 1.5rem; }
         }
-
-        :root {
-            --bg-page: #F8FAFC;
-            --bg-card: #FFFFFF;
-            --border-color: #E2E8F0;
-            --border-hover: #CBD5E1;
-            --text-primary: #0F172A;
-            --text-secondary: #475569;
-            --text-muted: #94A3B8;
-            --accent-blue: #0284C7;
-            --status-green: #10B981;
-            --shadow-subtle: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.05);
-            --shadow-card-hover: 0 10px 22px -4px rgba(15, 23, 42, 0.08), 0 4px 8px -2px rgba(15, 23, 42, 0.04);
+        @media (max-width:768px) {
+            .sidebar-toggle { display:flex; }
+            .sidebar { position:fixed; left:-260px; top:0; height:100vh; width:240px; z-index:200001; transition:left 0.3s ease; overflow-y:auto; }
+            .sidebar.open { left:0; }
+            .sidebar-backdrop.open { display:block; }
+            .content { padding:60px 15px 15px; }
+            .top-bar { flex-direction:column; align-items:flex-start; gap:10px; padding-bottom:12px; }
+            .top-bar h1 { font-size:1.5rem; }
+            .wallet-bal { flex-direction:column; align-items:stretch; padding:1rem; gap:15px; }
+            .wallet-bal .bal_view { justify-content:flex-start; }
+            .wallet-bal i { font-size:2rem; }
+            .trans { align-items:flex-start; gap:8px; }
+            .fund, .refund-btn { width:100%; text-align:center; display:block; }
         }
-
-        body {
-            background-color: var(--bg-page);
-            color: var(--text-primary);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* Top Header */
-        .portal-header {
-            background-color: #FFFFFF;
-            border-bottom: 1px solid var(--border-color);
-            position: sticky;
-            top: 0;
-            z-index: 40;
-        }
-
-        .header-inner {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 18px 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 20px;
-        }
-
-        .brand-group {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-        }
-
-        .brand-icon {
-            width: 40px;
-            height: 40px;
-            background: #0F172A;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.2);
-        }
-
-        .brand-icon svg {
-            width: 22px;
-            height: 22px;
-            fill: currentColor;
-        }
-
-        .brand-text h1 {
-            font-size: 17.5px;
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            color: var(--text-primary);
-            line-height: 1.2;
-        }
-
-        .brand-text p {
-            font-size: 12.5px;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .device-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background-color: #F1F5F9;
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            padding: 6px 14px;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .pulse-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background-color: var(--status-green);
-            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
-            70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-        }
-
-        /* Main Container */
-        .portal-main {
-            flex: 1;
-            max-width: 1400px;
-            width: 100%;
-            margin: 0 auto;
-            padding: 32px 24px 60px;
-        }
-
-        /* Unified Grid with all 14 modules */
-        .cards-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
-            gap: 20px;
-        }
-
-        /* Standard Portal Card */
-        .module-card {
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 14px;
-            padding: 22px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            box-shadow: var(--shadow-subtle);
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-            position: relative;
-        }
-
-        .module-card:hover {
-            border-color: var(--border-hover);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-card-hover);
-        }
-
-        .card-top {
-            display: flex;
-            align-items: flex-start;
-            gap: 16px;
-            margin-bottom: 20px;
-        }
-
-        /* Icon Boxes */
-        .icon-box {
-            width: 52px;
-            height: 52px;
-            border-radius: 13px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-            transition: transform 0.2s ease;
-        }
-
-        .module-card:hover .icon-box {
-            transform: scale(1.05);
-        }
-
-        .icon-box svg {
-            width: 29px;
-            height: 29px;
-            display: block;
-        }
-
-        /* Brand Colors for Icons */
-        .icon-box.whatsapp {
-            background-color: #25D366;
-            color: #FFFFFF;
-        }
-
-        .icon-box.snapchat {
-            background-color: #FFFC00;
-            color: #16191C;
-        }
-
-        .icon-box.facebook {
-            background-color: #1877F2;
-            color: #FFFFFF;
-        }
-
-        .icon-box.social-hub {
-            background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
-            color: #FFFFFF;
-        }
-
-        .icon-box.calls {
-            background-color: #10B981;
-            color: #FFFFFF;
-        }
-
-        .icon-box.messages {
-            background-color: #0284C7;
-            color: #FFFFFF;
-        }
-
-        .icon-box.deleted {
-            background-color: #EF4444;
-            color: #FFFFFF;
-        }
-
-        .icon-box.location {
-            background-color: #4F46E5;
-            color: #FFFFFF;
-        }
-
-        .icon-box.live {
-            background-color: #DC2626;
-            color: #FFFFFF;
-        }
-
-        .icon-box.remote {
-            background-color: #7C3AED;
-            color: #FFFFFF;
-        }
-
-        .icon-box.gallery {
-            background: linear-gradient(135deg, #F43F5E 0%, #FB923C 100%);
-            color: #FFFFFF;
-        }
-
-        .icon-box.files {
-            background-color: #2563EB;
-            color: #FFFFFF;
-        }
-
-        .icon-box.browser {
-            background-color: #0EA5E9;
-            color: #FFFFFF;
-        }
-
-        .icon-box.export {
-            background-color: #059669;
-            color: #FFFFFF;
-        }
-
-        .card-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .card-header-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-            margin-bottom: 5px;
-        }
-
-        .module-name {
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--text-primary);
-            letter-spacing: -0.01em;
-        }
-
-        .module-status {
-            font-size: 11px;
-            font-weight: 700;
-            padding: 2px 7px;
-            border-radius: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            background-color: #F1F5F9;
-            color: var(--text-secondary);
-        }
-
-        .module-status.live {
-            background-color: #FEF2F2;
-            color: #DC2626;
-        }
-
-        .module-status.synced {
-            background-color: #ECFDF5;
-            color: #059669;
-        }
-
-        .module-desc {
-            font-size: 13.5px;
-            color: var(--text-secondary);
-            line-height: 1.45;
-            font-weight: 500;
-        }
-
-        /* Card Footer & Standard Button */
-        .card-footer {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            border-top: 1px solid #F1F5F9;
-            padding-top: 14px;
-        }
-
-        /* Standard Open Button */
-        .standard-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            background-color: #0F172A;
-            color: #FFFFFF;
-            border: 1px solid transparent;
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            text-decoration: none;
-            line-height: 1;
-        }
-
-        .standard-btn:hover {
-            background-color: #1E293B;
-            transform: translateX(2px);
-        }
-
-        .standard-btn:active {
-            transform: scale(0.98);
-        }
-
-        .standard-btn svg {
-            width: 14px;
-            height: 14px;
-            fill: currentColor;
-            transition: transform 0.15s ease;
-        }
-
-        .module-card:hover .standard-btn svg {
-            transform: translateX(2px);
-        }
-
-        /* Portal Footer */
-        .portal-footer {
-            background-color: #FFFFFF;
-            border-top: 1px solid var(--border-color);
-            padding: 22px 24px;
-            text-align: center;
-            margin-top: auto;
-        }
-
-        .portal-footer p {
-            font-size: 13px;
-            color: var(--text-muted);
-            font-weight: 500;
-        }
-
-        /* Responsive Breakpoints */
-        @media (max-width: 768px) {
-            .header-inner {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 12px;
-            }
-
-            .header-meta {
-                width: 100%;
-                justify-content: space-between;
-            }
-
-            .cards-grid {
-                grid-template-columns: 1fr;
-            }
+        @media (max-width:480px) {
+            .cards { grid-template-columns:1fr; gap:10px; }
+            .card { padding:12px; gap:12px; }
+            .card-title { font-size:1rem; }
+            .card-desc { font-size:0.78rem; }
+            .screen-time { padding:12px; }
+            h2 { font-size:1.2rem; margin:1rem 0; }
+            .fullscreen-overlay { padding:15px; }
+            .descriptive-overlay-name { font-size:1.3rem; text-align:center; }
+            .overlay-subtext { font-size:0.9rem; }
+            .brand-overlay-logo { width:60px; height:60px; }
         }
     </style>
 </head>
 <body>
+    <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle menu">&#9776;</button>
+    <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
-    <!-- Top Navigation Header -->
-    <header class="portal-header">
-        <div class="header-inner">
-            <div class="brand-group">
-                <div class="brand-icon">
-                    <svg viewBox="0 0 24 24"><path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/></svg>
+    <div class="app">
+        <aside class="sidebar">
+            <div class="logo">
+                <span class="profile-link">
+                    <img loading="lazy" src="https://api.dicebear.com/7.x/avataaars/svg?seed=JamesCarter" alt="Profile"
+                         style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.4);background:#fff;">
+                    <span><strong>James Carter</strong></span>
+                </span>
+            </div>
+            <ul class="menu">
+                <li class="li_item active"><i class="fa-solid fa-gauge"></i><span class="menu-label">Dashboard</span></li>
+                <li class="li_item" onclick="go('phone-files.html')"><i class="fa-solid fa-folder"></i><span class="menu-label">Phone Files</span></li>
+                <li class="li_item" onclick="go('location-tracker.html')"><i class="fa-solid fa-location-dot"></i><span class="menu-label">Location Tracking</span></li>
+                <li class="li_item" onclick="go('social-apps.html')"><i class="fa-solid fa-comments"></i><span class="menu-label">Social Apps</span></li>
+                <li class="li_item" onclick="go('snapchat.html')"><i class="fa-solid fa-video"></i><span class="menu-label">Video Apps</span></li>
+                <li class="li_item" onclick="go('live-recording.html')"><i class="fa-solid fa-microphone"></i><span class="menu-label">Live Recording</span></li>
+                <li class="li_item" onclick="go('remote-control.html')"><i class="fa-solid fa-desktop"></i><span class="menu-label">Remote Control</span></li>
+                <li class="li_item" onclick="go('data-export.html')"><i class="fa-solid fa-file-export"></i><span class="menu-label">Data Export</span></li>
+                <li class="li_item" onclick="go('phone-files.html')"><i class="fa-solid fa-shield-halved"></i><span class="menu-label">Permissions Check</span></li>
+            </ul>
+        </aside>
+
+        <main class="content">
+            <header class="top-bar">
+                <h1>Dashboard</h1>
+                <div class="actions">
+                    <button class="btn primary" style="cursor:default;opacity:0.7;">Logout</button>
                 </div>
-                <div class="brand-text">
-                    <h1>Portal Hub & Navigation Center</h1>
-                    <p>Executive Device Monitoring & Unified Communications</p>
+            </header>
+
+            <h2>Welcome James Carter</h2>
+            <div class="wallet-bal">
+                <div class="bal_view">
+                    <i class="bi bi-wallet2"></i>
+                    <div class="bal">
+                        <p>Dashboard Wallet</p>
+                        <p class="bal">$0.00</p>
+                    </div>
+                </div>
+                <div class="trans">
+                    <span class="fund">Fund Wallet</span>
+                    <span class="refund-btn">Request Refund</span>
+                    <span style="color:#1e2f6f;padding:.5rem 0;cursor:default;">Transaction History &gt;</span>
                 </div>
             </div>
 
-            <div class="header-meta">
-                <div class="device-badge">
-                    <span class="pulse-dot"></span>
-                    <span>Target Device: Active & Connected</span>
+            <section class="cards">
+                <!-- WhatsApp -->
+                <div class="card card-whatsapp" onclick="go('whatsapp.html')">
+                    <div class="card-icon-container">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" class="card-icon-img" alt="WhatsApp" style="filter:brightness(0) invert(1);">
+                    </div>
+                    <div class="card-details">
+                        <p class="card-title">WhatsApp</p>
+                        <p class="card-desc">Your chats, loaded</p>
+                    </div>
                 </div>
-            </div>
+
+                <!-- Facebook -->
+                <div class="card card-facebook" onclick="go('facebook.html')">
+                    <div class="card-icon-container">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg" class="card-icon-img" alt="Facebook" style="filter:brightness(0) invert(1);">
+                    </div>
+                    <div class="card-details">
+                        <p class="card-title">Facebook</p>
+                        <p class="card-desc">Connecting to your account</p>
+                    </div>
+                </div>
+
+                <!-- Calls -->
+                <div class="card card-calls" onclick="go('calls.html')">
+                    <div class="card-icon-container">
+                        <i class="fa-solid fa-phone" style="font-size:1.4rem;color:#2E7D32;"></i>
+                    </div>
+                    <div class="card-details">
+                        <p class="card-title">Calls</p>
+                        <p class="card-desc">Stay connected with your calls</p>
+                    </div>
+                </div>
+
+                <!-- Text Messages -->
+                <div class="card card-messages" onclick="go('messages.html')">
+                    <div class="card-icon-container">
+                        <i class="fa-solid fa-comment" style="font-size:1.4rem;color:#00838F;"></i>
+                    </div>
+                    <div class="card-details">
+                        <p class="card-title">Text Messages</p>
+                        <p class="card-desc">Your conversations, connected</p>
+                    </div>
+                </div>
+
+                <!-- Gallery -->
+                <div class="card card-gallery" onclick="go('gallery.html')">
+                    <div class="card-icon-container">
+                        <svg viewBox="0 0 24 24" width="28" height="28">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="#FF5722"/>
+                            <circle cx="12" cy="12" r="4" fill="#FFC107" opacity="0.8"/>
+                            <path d="M12 5a7 7 0 0 1 7 7c0 .64-.09 1.27-.26 1.87L15 10H11V8H9V6h3V5z" fill="#4CAF50"/>
+                        </svg>
+                    </div>
+                    <div class="card-details">
+                        <p class="card-title">Gallery</p>
+                    </div>
+                </div>
+
+                <!-- Browser History -->
+                <div class="card card-browser" onclick="go('browser-history.html')">
+                    <div class="card-icon-container">
+                        <svg viewBox="0 0 24 24" width="28" height="28">
+                            <path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z" fill="#2196F3"/>
+                        </svg>
+                    </div>
+                    <div class="card-details">
+                        <p class="card-title">Browser History</p>
+                        <p class="card-desc">Your browsing journey, saved</p>
+                    </div>
+                </div>
+
+                <!-- Deleted Messages -->
+                <div class="card card-deleted" onclick="go('deleted-messages.html')">
+                    <div class="card-icon-container">
+                        <svg viewBox="0 0 24 24" width="28" height="28">
+                            <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM9 11H7V9h2v2zm4 0h-2V9h2v2zm4 0h-2V9h2v2z" fill="#E8F5E9"/>
+                            <path d="M15.5 4l-1-1h-5l-1 1H5v2h14V4zM6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12z" fill="#4CAF50"/>
+                        </svg>
+                    </div>
+                    <div class="card-details">
+                        <p class="card-title">Deleted Messages</p>
+                        <p class="card-desc">Recover your deleted messages</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="screen-time">
+                <div class="section-header">
+                    <h3>Screen Time</h3>
+                    <span style="color:#1e2f6f;cursor:default;">More &gt;&gt;</span>
+                </div>
+                <div class="usage">
+                    <div class="app-usage">
+                        <span>Snapchat</span>
+                        <div class="bar"><div class="fill" style="width:70%"></div></div>
+                        <small>1h 4m 57s</small>
+                    </div>
+                    <div class="app-usage">
+                        <span>AnyConnect</span>
+                        <div class="bar"><div class="fill yellow" style="width:45%"></div></div>
+                        <small>45m 57s</small>
+                    </div>
+                    <div class="app-usage">
+                        <span>Google Play</span>
+                        <div class="bar"><div class="fill red" style="width:40%"></div></div>
+                        <small>42m 6s</small>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Fullscreen Loading Overlay -->
+    <div class="fullscreen-overlay" id="loadingOverlay">
+        <div id="overlayIcon"></div>
+        <div class="overlay-spinner"></div>
+        <div id="overlayName"></div>
+        <div class="overlay-subtext" id="overlaySubtext"></div>
+        <div class="overlay-progress-container" id="overlayProgressContainer">
+            <div class="overlay-progress-bar" id="overlayProgressBar"></div>
         </div>
-    </header>
+    </div>
 
-    <!-- Main Content Area with all 14 modules together -->
-    <main class="portal-main">
+    <script>
+        function go(page) { window.location.href = page; }
 
-        <div class="cards-grid">
+        // Sidebar toggle
+        const sidebarToggle   = document.getElementById('sidebarToggle');
+        const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+        const sidebar         = document.querySelector('.sidebar');
+        sidebarToggle.addEventListener('click', () => { sidebar.classList.add('open'); sidebarBackdrop.classList.add('open'); });
+        sidebarBackdrop.addEventListener('click', () => { sidebar.classList.remove('open'); sidebarBackdrop.classList.remove('open'); });
 
-            <!-- 1. WhatsApp (Official WhatsApp Logo) -->
-            <div class="module-card">
-                <div class="card-top">
-                    <div class="icon-box whatsapp" title="WhatsApp">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
-                        </svg>
-                    </div>
-                    <div class="card-info">
-                        <div class="card-header-row">
-                            <span class="module-name">WhatsApp</span>
-                            <span class="module-status synced">Active</span>
-                        </div>
-                        <p class="module-desc">Incoming & outgoing chats, voice notes, media attachments, and status stories.</p>
-                    </div>
-                </div>
-                <div class="card-footer">
-                    <a href="whatsapp.html" class="standard-btn">
-                        Open Page
-                        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-                    </a>
-                </div>
-            </div>
+        // Loading overlay
+        let overlayTimeout = null, progressTimeout = null;
+        function showLoadingOverlay(featureKey, displayName, options = {}) {
+            const overlay = document.getElementById('loadingOverlay');
+            const overlayIcon = document.getElementById('overlayIcon');
+            const overlayName = document.getElementById('overlayName');
+            const progressBarContainer = document.getElementById('overlayProgressContainer');
+            const progressBar = document.getElementById('overlayProgressBar');
+            const overlaySubtext = document.getElementById('overlaySubtext');
+            if (overlayTimeout) clearTimeout(overlayTimeout);
+            if (progressTimeout) clearTimeout(progressTimeout);
+            overlay.className = 'fullscreen-overlay';
+            progressBarContainer.style.display = 'none';
+            overlaySubtext.style.display = 'none';
+            overlaySubtext.innerText = '';
+            overlay.style.opacity = '1';
+            overlay.classList.add('theme-' + featureKey);
+            if (options.isBrand) {
+                overlayIcon.innerHTML = `<img src="${options.logoSrc}" class="brand-overlay-logo" alt="logo">`;
+                overlayName.innerHTML = `<img src="${options.logoSrc}" class="brand-overlay-name-logo" alt="name logo">`;
+            } else {
+                if (options.iconSvg) overlayIcon.innerHTML = options.iconSvg;
+                overlayName.innerHTML = `<span class="descriptive-overlay-name">${displayName}</span>`;
+            }
+            if (options.subtext) { overlaySubtext.style.display='block'; overlaySubtext.innerText=options.subtext; }
+            if (featureKey === 'location') {
+                progressBarContainer.style.display = 'block';
+                progressBar.style.width = '0%';
+                progressTimeout = setTimeout(() => { progressBar.style.width = '100%'; }, 50);
+            }
+            overlay.style.display = 'flex';
+            overlayTimeout = setTimeout(() => {
+                overlay.style.opacity = '0';
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                    if (options.dest) go(options.dest);
+                }, 300);
+            }, 4000);
+        }
 
-            <!-- 2. Snapchat (Official Snapchat Logo) -->
-            <div class="module-card">
-                <div class="card-top">
-                    <div class="icon-box snapchat" title="Snapchat">
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M12.206.793c.99 0 4.347.276 5.93 3.821.529 1.193.403 3.219.299 4.847l-.003.06c-.012.18-.022.345-.03.51.075.045.203.09.401.09.3-.016.659-.12 1.033-.301.165-.088.344-.104.464-.104.182 0 .359.029.509.09.45.149.734.479.734.838.015.449-.39.839-1.213 1.168-.089.029-.209.075-.344.119-.45.135-1.139.36-1.333.81-.09.224-.061.524.12.868l.015.015c.06.136 1.526 3.475 4.791 4.014.255.044.435.27.42.509 0 .075-.015.149-.045.225-.24.569-1.273.988-3.146 1.271-.059.091-.12.375-.164.57-.029.179-.074.36-.134.553-.076.271-.27.405-.555.405h-.03c-.135 0-.313-.031-.538-.074-.36-.075-.765-.135-1.273-.135-.3 0-.599.015-.913.074-.6.104-1.123.464-1.723.884-.853.599-1.826 1.288-3.294 1.288-.06 0-.119-.015-.18-.015h-.149c-1.468 0-2.427-.675-3.279-1.288-.599-.42-1.107-.779-1.707-.884-.314-.045-.629-.074-.928-.074-.54 0-.958.089-1.272.149-.211.043-.391.074-.54.074-.374 0-.523-.224-.583-.42-.061-.192-.09-.389-.135-.567-.046-.181-.105-.494-.166-.57-1.918-.222-2.95-.642-3.189-1.226-.031-.063-.052-.15-.055-.225-.015-.243.165-.465.42-.509 3.264-.54 4.73-3.879 4.791-4.02l.016-.029c.18-.345.224-.645.119-.869-.195-.434-.884-.658-1.332-.809-.121-.029-.24-.074-.346-.119-1.107-.435-1.257-.93-1.197-1.273.09-.479.674-.793 1.168-.793.146 0 .27.029.383.074.42.194.789.3 1.104.3.234 0 .384-.06.465-.105l-.046-.569c-.098-1.626-.225-3.651.307-4.837C7.392 1.077 10.739.807 11.727.807l.419-.015h.06z" fill="#FFFFFF" stroke="#16191C" stroke-width="0.85" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                    <div class="card-info">
-                        <div class="card-header-row">
-                            <span class="module-name">Snapchat</span>
-                            <span class="module-status synced">Live Feed</span>
-                        </div>
-                        <p class="module-desc">Snapchat Web dashboard, Bitmoji direct messages, snap streaks, and story logs.</p>
-                    </div>
-                </div>
-                <div class="card-footer">
-                    <a href="snapchat.html" class="standard-btn">
-                        Open Page
-                        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-                    </a>
-                </div>
-            </div>
+        // Card click handlers — show animation then navigate
+        const cardDests = {
+            whatsapp: { isBrand:true, logoSrc:'https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg', subtext:'Your chats, loaded', dest:'whatsapp.html' },
+            facebook: { isBrand:true, logoSrc:'https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg', subtext:'Connecting to your account', dest:'facebook.html' },
+            calls:    { iconSvg:`<svg class="brand-overlay-logo" viewBox="0 0 24 24" style="width:80px;height:80px;"><path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 0 0-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.12-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z" fill="#2E7D32"/></svg>`, subtext:'Stay connected with your calls', dest:'calls.html' },
+            messages: { iconSvg:`<svg class="brand-overlay-logo" viewBox="0 0 24 24" style="width:80px;height:80px;"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" fill="#00838F"/></svg>`, subtext:'Your conversations, connected', dest:'messages.html' },
+            gallery:  { iconSvg:`<svg class="brand-overlay-logo" viewBox="0 0 24 24" style="width:80px;height:80px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" fill="#FF5722"/><circle cx="12" cy="12" r="4" fill="#FFC107" opacity="0.8"/></svg>`, dest:'gallery.html' },
+            browser:  { iconSvg:`<svg class="brand-overlay-logo" viewBox="0 0 24 24" style="width:80px;height:80px;"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z" fill="#2196F3"/></svg>`, subtext:'Your browsing journey, saved', dest:'browser-history.html' },
+            deleted:  { iconSvg:`<svg class="brand-overlay-logo" viewBox="0 0 24 24" style="width:80px;height:80px;"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM9 11H7V9h2v2zm4 0h-2V9h2v2zm4 0h-2V9h2v2z" fill="#E8F5E9"/><path d="M15.5 4l-1-1h-5l-1 1H5v2h14V4zM6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12z" fill="#4CAF50"/></svg>`, subtext:'Recover your deleted messages', dest:'deleted-messages.html' },
+        };
 
-            <!-- 3. Facebook (Official Facebook Logo) -->
-            <div class="module-card">
-                <div class="card-top">
-                    <div class="icon-box facebook" title="Facebook">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                        </svg>
-                    </div>
-                    <div class="card-info">
-                        <div class="card-header-row">
-                            <span class="module-name">Facebook</span>
-                            <span class="module-status synced">Active</span>
-                        </div>
-                        <p class="module-desc">Timeline feed activity, private Messenger logs, notifications, and friend connections.</p>
-                    </div>
-                </div>
-                <div class="card-footer">
-                    <a href="facebook.html" class="standard-btn">
-                        Open Page
-                        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-                    </a>
-                </div>
-            </div>
+        document.querySelectorAll('.card[onclick]').forEach(card => {
+            const dest = card.getAttribute('onclick').match(/'([^']+)'/)?.[1];
+            if (!dest) return;
+            const key = Object.keys(cardDests).find(k => cardDests[k].dest === dest);
+            if (!key) return;
+            card.setAttribute('onclick', '');
+            card.addEventListener('click', () => {
+                showLoadingOverlay(key, key.charAt(0).toUpperCase()+key.slice(1), cardDests[key]);
+            });
+        });
 
-            <!-- 4. Social Apps Hub -->
-            <div class="module-card">
-                <div class="card-top">
-                    <div class="icon-box social-hub" title="Social Apps Hub">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
-                        </svg>
-                    </div>
-                    <div class="card-info">
-                        <div class="card-header-row">
-                            <span class="module-name">Social Apps Hub</span>
-                            <span class="module-status">Multi-App</span>
-                        </div>
-                        <p class="module-desc">Consolidated multi-app monitoring across Instagram, TikTok, X (Twitter), and YouTube.</p>
-                    </div>
-                </div>
-                <div class="card-footer">
-                    <a href="social-apps.html" class="standard-btn">
-                        Open Page
-                        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-                    </a>
-                </div>
-            </div>
-
-            <!-- 5. Phone Calls -->
-            <div class="module-card">
-                <div class="card-top">
-                    <div class="icon-box calls" title="Phone Calls">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56-.35-.12-.74-.03-1.01.24l-2.2 2.2c-2.83-1.44-5.15-3.75-6.59-6.59l2.2-2.21c.28-.26.36-.65.25-1C8.7 6.3 8.5 5.1 8.5 3.87 8.5 3.39 8.11 3 7.63 3H4.07c-.48 0-.87.39-.87.87 0 9.39 7.64 17.03 17.03 17.03.48 0 .87-.39.87-.87v-3.56c0-.48-.39-.87-.87-.87zM15 3v2h3.59l-9.83 9.83 1.41 1.41L20 6.41V10h2V3h-7z"/>
-                        </svg>
-                    </div>
-                    <div class="card-info">
-                        <div class="card-header-row">
-                            <span class="module-name">Call History</span>
-                            <span class="module-status synced">Synced</span>
-                        </div>
-                        <p class="module-desc">Incoming, outgoing, and missed call records with contact names, timestamps, and durations.</p>
-                    </div>
-                </div>
-                <div class="card-footer">
-                    <a href="calls.html" class="standard-btn">
-                        Open Page
-                        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-                    </a>
-                </div>
-            </div>
-
-            <!-- 6. Text Messages (SMS) -->
-            <div class="module-card">
-                <div class="card-top">
-                    <div class="icon-box messages" title="Text Messages">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/>
-                        </svg>
-                    </div>
-                    <div class="card-info">
-                        <div class="card-header-row">
-                            <span class="module-name">Messages (SMS)</span>
-                            <span class="module-status synced">Active</span>
-                        </div>
-                        <p class="module-desc">Native device SMS text message threads, contact information, and conversation history.</p>
-                    </div>
-                </div>
-                <div class="card-footer">
-                    <a href="messages.html" class="standard-btn">
-                        Open Page
-                        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-                    </a>
-                </div>
-            </div>
-
-            <!-- 7. Deleted Messages -->
-            <div class="module-card">
-                <div class="card-top">
-                    <div class="icon-box deleted" title="Deleted Messages">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
-                        </svg>
-                    </div>
-                    <div class="card-info">
-                        <div class="card-header-row">
-                            <span class="module-name">Deleted Messages</span>
-                            <span class="module-status live">Recovery</span>
-                        </div>
-                        <p class="module-desc">Forensic recovery logs capturing deleted text chats, purged messages, and unsend alerts.</p>
-                    </div>
-                </div>
-                <div class="card-footer">
-                    <a href="deleted-messages.html" class="standard-btn">
-                        Open Page
-                        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-                    </a>
-                </div>
-            </div>
-
-            <!-- 8. Location Tracker -->
-            <div class="module-card">
-                <div class="card-top">
-                    <div class="icon-box location" title="Location Tracker">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-                        </svg>
-                    </div>
-                    <div class="card-info">
-                        <div class="card-header-row">
-                            <span class="module-name">Location Tracker</span>
-                            <span class="module-status live">GPS Live</span>
-                        </div>
-                        <p class="module-desc">Real-time GPS mapping, location history timeline, geofence radius alerts, and transit logs.</p>
-                    </div>
-                </div>
-                <div class="card-footer">
-                    <a href="location-tracker.html" class="standard-btn">
-                        Open Page
-                        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-                    </a>
-                </div>
-            </div>
-
-            <!-- 9. Live Recording -->
-            <div class="module-card">
-                <div class="card-top">
-                    <div class="icon-box live" title="Live Recording">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm0-12c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4z"/>
-                        </svg>
-                    </div>
-                    <div class="card-info">
-                        <div class="card-header-row">
-                            <span class="module-name">Live Recording</span>
-                            <span class="module-status live">Stream</span>
-                        </div>
-                        <p class="module-desc">Real-time surround microphone listening, front/rear camera feeds, and screen mirroring.</p>
-                    </div>
-                </div>
-                <div class="card-footer">
-                    <a href="live-recording.html" class="standard-btn">
-                        Open Page
-                        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-                    </a>
-                </div>
-            </div>
-
-            <!-- 10. Remote Control -->
-            <div class="module-card">
-                <div class="card-top">
-                    <div class="icon-box remote" title="Remote Control">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14zm-4.2-7.8l1.4 1.4-3.2 3.2-1.4-1.4 3.2-3.2zm-.8-4.2c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2z"/>
-                        </svg>
-                    </div>
-                    <div class="card-info">
-                        <div class="card-header-row">
-                            <span class="module-name">Remote Control</span>
-                            <span class="module-status">Commands</span>
-                        </div>
-                        <p class="module-desc">Send remote device commands: screen locking, application blocking, and remote capture.</p>
-                    </div>
-                </div>
-                <div class="card-footer">
-                    <a href="remote-control.html" class="standard-btn">
-                        Open Page
-                        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-                    </a>
-                </div>
-            </div>
-
-            <!-- 11. Photo Gallery -->
-            <div class="module-card">
-                <div class="card-top">
-                    <div class="icon-box gallery" title="Photo Gallery">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
-                        </svg>
-                    </div>
-                    <div class="card-info">
-                        <div class="card-header-row">
-                            <span class="module-name">Photo Gallery</span>
-                            <span class="module-status synced">Synced</span>
-                        </div>
-                        <p class="module-desc">Camera roll photos, downloaded media, saved albums, screenshots, and video clips.</p>
-                    </div>
-                </div>
-                <div class="card-footer">
-                    <a href="gallery.html" class="standard-btn">
-                        Open Page
-                        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-                    </a>
-                </div>
-            </div>
-
-            <!-- 12. Phone Files -->
-            <div class="module-card">
-                <div class="card-top">
-                    <div class="icon-box files" title="Phone Files">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-1 8h-3v3h-2v-3h-3v-2h3V9h2v3h3v2z"/>
-                        </svg>
-                    </div>
-                    <div class="card-info">
-                        <div class="card-header-row">
-                            <span class="module-name">Phone Files</span>
-                            <span class="module-status">Storage</span>
-                        </div>
-                        <p class="module-desc">Internal storage directory browser, downloaded PDFs, APK packages, and documents.</p>
-                    </div>
-                </div>
-                <div class="card-footer">
-                    <a href="phone-files.html" class="standard-btn">
-                        Open Page
-                        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-                    </a>
-                </div>
-            </div>
-
-            <!-- 13. Browser History -->
-            <div class="module-card">
-                <div class="card-top">
-                    <div class="icon-box browser" title="Browser History">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
-                        </svg>
-                    </div>
-                    <div class="card-info">
-                        <div class="card-header-row">
-                            <span class="module-name">Browser History</span>
-                            <span class="module-status synced">Active</span>
-                        </div>
-                        <p class="module-desc">Web browser tracking: visited URLs, search queries, saved bookmarks, and timestamped pages.</p>
-                    </div>
-                </div>
-                <div class="card-footer">
-                    <a href="browser-history.html" class="standard-btn">
-                        Open Page
-                        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-                    </a>
-                </div>
-            </div>
-
-            <!-- 14. Data Export -->
-            <div class="module-card">
-                <div class="card-top">
-                    <div class="icon-box export" title="Data Export">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2v9.67z"/>
-                        </svg>
-                    </div>
-                    <div class="card-info">
-                        <div class="card-header-row">
-                            <span class="module-name">Data Export</span>
-                            <span class="module-status">Archive</span>
-                        </div>
-                        <p class="module-desc">Generate compliance reports, full database backups, and downloadable CSV/PDF dossiers.</p>
-                    </div>
-                </div>
-                <div class="card-footer">
-                    <a href="data-export.html" class="standard-btn">
-                        Open Page
-                        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
-                    </a>
-                </div>
-            </div>
-
-        </div>
-
-    </main>
-
-    <!-- Footer -->
-    <footer class="portal-footer">
-        <p>© 2026 Unified Portal Management System • 14 Operational Modules Active</p>
-    </footer>
-
+        // Sidebar menu items that navigate
+        document.querySelectorAll('.menu li[onclick]').forEach(li => {
+            const dest = li.getAttribute('onclick').match(/'([^']+)'/)?.[1];
+            if (!dest) return;
+            li.setAttribute('onclick','');
+            li.addEventListener('click', () => go(dest));
+        });
+    </script>
 </body>
 </html>

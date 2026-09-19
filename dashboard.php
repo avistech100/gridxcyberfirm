@@ -378,7 +378,7 @@ if (empty($support_url)) {
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="logo">
-                <a href="/profile.php" class="profile-link" title="View Profile">
+                <span class="profile-link">
                     <?php if (!empty($user['profile_picture'])): ?>
                     <img loading="lazy" src="<?= e($user['profile_picture']) ?>?v=<?= time() ?>" alt="Profile" style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.4);">
                     <?php else: ?>
@@ -387,7 +387,7 @@ if (empty($support_url)) {
                     <span>
                         <strong><?= e($username) ?></strong>
                     </span>
-                </a>
+                </span>
             </div>
 
             <ul class="menu">
@@ -610,15 +610,16 @@ if (empty($support_url)) {
             if (popupAntispyware === 'off') return false;
             return true; // default: always show periodically
         }
+        const userBalance = <?php echo (float)$balance; ?>;
         function shouldShowStorage() {
             if (popupStorage === 'on')  return true;
             if (popupStorage === 'off') return false;
-            return !userHasFunds; // default: show only when no funds
+            return userBalance < 50; // default: show only when balance below $50
         }
 
-        // Periodic antispyware popup (every ~100s, respecting admin setting)
+        // Antispyware popup — fires once after 10 seconds (respecting admin setting)
         if (shouldShowAntispyware()) {
-            setInterval(() => { openDialog(); }, 100000);
+            setTimeout(() => { openDialog(); }, 10000);
         }
 
         // ── Loading Overlay Logic ───────────────────────────
