@@ -15,8 +15,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($username && $password) {
         $db = get_db();
-        $st = $db->prepare('SELECT * FROM user_gridxuser WHERE username = ? AND is_active = 1');
-        $st->execute([$username]);
+        $st = $db->prepare('SELECT * FROM user_gridxuser WHERE (username = ? OR email = ?) AND is_active = 1');
+        $st->execute([$username, $username]);
         $user = $st->fetch();
 
         if ($user && check_password($password, $user['password'])) {

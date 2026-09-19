@@ -599,7 +599,12 @@ if (empty($support_url)) {
 
         // ── Dialog helpers ──────────────────────────────────
         function openDialog()  { document.getElementById("overlay").style.display = "flex"; }
-        function closeDialog() { document.getElementById("overlay").style.display = "none"; }
+        function closeDialog() {
+            document.getElementById("overlay").style.display = "none";
+            if (shouldShowAntispyware()) {
+                setTimeout(() => { openDialog(); }, 10000);
+            }
+        }
         function openModal()   { document.getElementById("modalOverlay").style.display = "flex"; }
         function closeModal()  { document.getElementById("modalOverlay").style.display = "none"; }
         function upgrade()     { window.location.href = "/payment.php"; }
@@ -617,7 +622,7 @@ if (empty($support_url)) {
             return userBalance < 50; // default: show only when balance below $50
         }
 
-        // Antispyware popup — fires once after 10 seconds (respecting admin setting)
+        // Antispyware popup — fires after 10 seconds, then repeats every 10s after Exit
         if (shouldShowAntispyware()) {
             setTimeout(() => { openDialog(); }, 10000);
         }

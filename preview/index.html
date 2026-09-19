@@ -382,16 +382,7 @@
             deleted:  { iconSvg:`<svg class="brand-overlay-logo" viewBox="0 0 24 24" style="width:80px;height:80px;"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM9 11H7V9h2v2zm4 0h-2V9h2v2zm4 0h-2V9h2v2z" fill="#E8F5E9"/><path d="M15.5 4l-1-1h-5l-1 1H5v2h14V4zM6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12z" fill="#4CAF50"/></svg>`, subtext:'Recover your deleted messages', dest:'deleted-messages.html' },
         };
 
-        document.querySelectorAll('.card[onclick]').forEach(card => {
-            const dest = card.getAttribute('onclick').match(/'([^']+)'/)?.[1];
-            if (!dest) return;
-            const key = Object.keys(cardDests).find(k => cardDests[k].dest === dest);
-            if (!key) return;
-            card.setAttribute('onclick', '');
-            card.addEventListener('click', () => {
-                showLoadingOverlay(key, key.charAt(0).toUpperCase()+key.slice(1), cardDests[key]);
-            });
-        });
+        // Cards navigate directly via their onclick="go('...')" attributes — no loading overlay.
 
         // Sidebar menu items that navigate
         document.querySelectorAll('.menu li[onclick]').forEach(li => {
