@@ -77,6 +77,30 @@ if ($action === 'toggle_antispyware' && $id) {
     redirect('/admin/users.php' . ($page > 1 ? '?page=' . $page : ''));
 }
 
+// ── TOGGLE LOW STORAGE POPUP (Single User): default -> on -> off -> default ──
+if ($action === 'toggle_storage' && $id) {
+    verify_csrf();
+    $db->exec("CREATE TABLE IF NOT EXISTS user_popup_settings (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL UNIQUE,
+        antispyware ENUM('on','off','default') NOT NULL DEFAULT 'default',
+        storage     ENUM('on','off','default') NOT NULL DEFAULT 'default',
+        FOREIGN KEY (user_id) REFERENCES user_gridxuser(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    $cur = $db->prepare('SELECT storage FROM user_popup_settings WHERE user_id=?');
+    $cur->execute([$id]);
+    $curval = $cur->fetchColumn() ?: 'default'; // no row = default
+    $next   = ['default' => 'on', 'on' => 'off', 'off' => 'default'];
+    $newval = $next[$curval] ?? 'on';
+    // New rows get antispyware='on' so the list's Spy button keeps showing ON (same as no row)
+    $db->prepare('INSERT INTO user_popup_settings (user_id, antispyware, storage) VALUES (?,\'on\',?)
+                  ON DUPLICATE KEY UPDATE storage=?')
+       ->execute([$id, $newval, $newval]);
+    set_flash('success', 'Low storage popup set to ' . strtoupper($newval) . ' for this user.');
+    $page = (int)($_GET['page'] ?? 1);
+    redirect('/admin/users.php' . ($page > 1 ? '?page=' . $page : ''));
+}
+
 // ── DELETE ─────────────────────────────────────────────────
 if ($action === 'delete' && $id) {
     verify_csrf();
@@ -230,7 +254,8 @@ $total->execute($params);
 $total   = (int)$total->fetchColumn();
 $pg      = paginate($total, $per_page, $page);
 $params_limit = array_merge($params, [$per_page, $pg['offset']]);
-$users_st = $db->prepare("SELECT u.*, COALESCE(ps.antispyware, 'on') AS spy_state
+$users_st = $db->prepare("SELECT u.*, COALESCE(ps.antispyware, 'on') AS spy_state,
+        COALESCE(ps.storage, 'default') AS storage_state
     FROM user_gridxuser u
     LEFT JOIN user_popup_settings ps ON ps.user_id = u.id
     $where ORDER BY u.id DESC LIMIT ? OFFSET ?");
@@ -337,6 +362,7 @@ $enabled_refund_count    = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser 
                         <th>Dashboard</th>
                         <th>Refund</th>
                         <th title="Antispyware Popup">🛡 Spy</th>
+                        <th title="Low Storage Popup">Storage</th>
                         <th>Joined</th>
                     </tr>
                 </thead>
@@ -362,11 +388,14 @@ $enabled_refund_count    = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser 
                         <td id="spy-toggle-cell-<?= $u['id'] ?>">
                             <!-- Spy toggle injected below outside this form -->
                         </td>
+                        <td id="storage-toggle-cell-<?= $u['id'] ?>">
+                            <!-- Storage toggle injected below outside this form -->
+                        </td>
                         <td><?= e(substr($u['date_joined'],0,10)) ?></td>
                     </tr>
                     <?php endforeach; ?>
                     <?php if (!$users): ?>
-                    <tr><td colspan="10" class="text-center text-muted">No users found.</td></tr>
+                    <tr><td colspan="11" class="text-center text-muted">No users found.</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>
@@ -411,6 +440,21 @@ $enabled_refund_count    = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser 
                 <?= $u['spy_state'] === 'on' ? '🛡 ON' : '🛡 OFF' ?>
             </button>
         </form>
+        <form method="post"
+              action="/admin/users.php?action=toggle_storage&id=<?= $u['id'] ?><?= $page > 1 ? '&page='.$page : '' ?>"
+              class="d-none toggle-form-desktop"
+              data-target="storage-toggle-cell-<?= $u['id'] ?>">
+            <?= csrf_field() ?>
+            <?php $st = $u['storage_state'] ?? 'default';
+                    $st_cls = $st === 'on' ? 'btn-warning' : ($st === 'off' ? 'btn-danger' : 'btn-secondary');
+                    $st_lbl = $st === 'on' ? 'ON' : ($st === 'off' ? 'OFF' : 'Default'); ?>
+            <button type="submit"
+                    class="btn btn-xs <?= $st_cls ?>"
+                    style="padding:1px 6px;font-size:11px;border-radius:4px;white-space:nowrap;"
+                    title="Low storage popup: <?= $st_lbl ?> (click to change). Default = shows when balance is below $50">
+                <?= $st_lbl ?>
+            </button>
+        </form>
         <?php endforeach; ?>
 
         <!-- MOBILE CARD LIST (visible on small screens only) -->
@@ -427,7 +471,7 @@ $enabled_refund_count    = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser 
                     </a>
                     <span class="text-muted" style="font-size:0.75rem;"><?= e(substr($u['date_joined'],0,10)) ?></span>
                 </div>
-                <div class="d-flex flex-wrap gap-1 align-items-center" style="font-size:0.8rem;">
+                <div class="d-flex flex-wrap gap-2 align-items-center" style="font-size:0.8rem;">
                     <span class="me-1">💰 $<?= e($u['balance']) ?></span>
                     <?= $u['is_active'] ? '<span class="badge bg-success" style="font-size:0.7rem;">Active</span>' : '<span class="badge bg-danger" style="font-size:0.7rem;">Inactive</span>' ?>
                     <!-- Dashboard toggle -->
@@ -461,6 +505,20 @@ $enabled_refund_count    = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser 
                                 class="btn btn-xs <?= ($u['spy_state'] === 'on') ? 'btn-warning' : 'btn-secondary' ?>"
                                 style="padding:2px 7px;font-size:0.7rem;border-radius:4px;">
                             🛡 <?= $u['spy_state'] === 'on' ? 'Spy ON' : 'Spy OFF' ?>
+                        </button>
+                    </form>
+                    <!-- Low storage popup toggle -->
+                    <form method="post"
+                          action="/admin/users.php?action=toggle_storage&id=<?= $u['id'] ?><?= $page > 1 ? '&page='.$page : '' ?>"
+                          style="display:inline;">
+                        <?= csrf_field() ?>
+                        <?php $st = $u['storage_state'] ?? 'default';
+                    $st_cls = $st === 'on' ? 'btn-warning' : ($st === 'off' ? 'btn-danger' : 'btn-secondary');
+                    $st_lbl = $st === 'on' ? 'ON' : ($st === 'off' ? 'OFF' : 'Default'); ?>
+                        <button type="submit"
+                                class="btn btn-xs <?= $st_cls ?>"
+                                style="padding:2px 7px;font-size:0.7rem;border-radius:4px;white-space:nowrap;">
+                            Storage: <?= $st_lbl ?>
                         </button>
                     </form>
                 </div>
@@ -684,7 +742,7 @@ $enabled_refund_count    = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser 
                 <div class="col-md-6 mb-3">
                     <label class="form-label fw-bold">Insufficient File Storage Dialog</label>
                     <select name="popup_storage" class="form-select">
-                        <option value="default" <?= $popup_row['storage']==='default'?'selected':'' ?>>Default (shows when no funds)</option>
+                        <option value="default" <?= $popup_row['storage']==='default'?'selected':'' ?>>Default (shows when balance is below $50)</option>
                         <option value="on"      <?= $popup_row['storage']==='on'?'selected':'' ?>>Always ON (force show)</option>
                         <option value="off"     <?= $popup_row['storage']==='off'?'selected':'' ?>>Always OFF (never show)</option>
                     </select>
