@@ -805,6 +805,15 @@ footer .copyright {
     grid-template-columns: 1fr;
   }
 }
+@media (max-width: 640px){
+  .auth-actions{gap:8px}
+  .btn-signin{display:none}
+  .btn-signup{padding:7px 12px;font-size:.85rem}
+}
+@media (max-width: 380px){
+  .logo span{font-size:1.05rem}
+  .auth-actions{gap:6px}
+}
 </style>
 </head>
 <body>
@@ -812,14 +821,14 @@ footer .copyright {
 
 <header>
   <div class="wrap">
-    <a class="logo" href="#top" aria-label="gridxcyberfirm home">
+    <a class="logo" href="#top" aria-label="DeviceSycn Connect home">
       <svg width="32" height="34" viewBox="0 0 30 34" fill="none" aria-hidden="true">
         <rect x="3" y="2" width="17" height="28" rx="3.5" stroke="#0b2a5b" stroke-width="2.2"/>
         <path d="M9 7h5" stroke="#0b2a5b" stroke-width="2" stroke-linecap="round"/>
         <path d="M22 14l6 2.3v5c0 4-2.6 6.3-6 7.7-3.4-1.4-6-3.7-6-7.7v-5z" fill="#1d6fe8"/>
         <path d="M19.5 21.5l2 2 3.5-3.8" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      <span>gridxcyberfirm</span>
+      <span>DeviceSycn Connect</span>
     </a>
     <div class="right">
       <nav class="nav-links" aria-label="Primary navigation">
@@ -847,7 +856,7 @@ footer .copyright {
 
 <main id="main-content">
   <section class="hero wrap" id="top">
-    <div class="pill-badge">Carrier &amp; Line Verification Engine</div>
+    <div class="pill-badge">DeviceSycn &amp; Line Verification</div>
     <h1>Look up any phone number in seconds</h1>
     <p class="sub">Instant telecom intelligence: detect real-time carrier records, line type, country and region.</p>
     

@@ -638,6 +638,28 @@ main {
   .lt-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .locked-teaser{padding:18px 16px}
 }
+@media (max-width: 640px){
+  .header-actions{gap:6px}
+  .btn-login{display:none}
+  .btn-signup{padding:7px 12px;font-size:.85rem}
+  .btn-back{padding:8px 10px}
+  .btn-back span{display:none}
+}
+@media (max-width: 380px){
+  .logo span{font-size:1.05rem}
+}
+@media (max-width: 640px){
+  .report-hero{padding:20px 16px;gap:14px}
+  .hero-num-block{max-width:100%}
+  .hero-num-block h1{font-size:clamp(1.15rem,6.4vw,1.85rem);word-break:break-word}
+  .hero-num-meta{flex-wrap:wrap;gap:8px}
+  .hero-badge-wrap{flex-wrap:wrap;width:100%;gap:10px}
+  .report-actions{flex-wrap:wrap;gap:8px}
+  .btn-secondary{padding:9px 12px}
+}
+@media (max-width: 640px){
+  .data-val.mono{font-size:.82rem;overflow-wrap:anywhere;text-align:right}
+}
 </style>
 </head>
 <body>
@@ -655,7 +677,7 @@ main {
     <div class="header-actions">
       <a href="/login" class="btn-login" id="hdr-login">Login</a>
       <a href="/signup" class="btn-signup" id="hdr-signup">Sign up</a>
-      <a href="index.html" class="btn-back">
+      <a href="index.html" class="btn-back" title="New Search" aria-label="New Search">
         <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M12 4l-6 6 6 6" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
