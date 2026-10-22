@@ -180,7 +180,7 @@ $dashboard_access = (int)($user['dashboard_access'] ?? 0);
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['retry'])) {
     verify_csrf();
     $fee_amount = (float)get_site_setting('signup_fee_amount', '50');
-    $db->prepare('INSERT INTO user_trasaction (user_id, amount, is_approved, date) VALUES (?, ?, "initialize", NOW())')
+    $db->prepare('INSERT INTO user_trasaction (user_id, amount, is_approved) VALUES (?, ?, "initialize")')
        ->execute([$user_id, $fee_amount]);
     $new_tx = (int)$db->lastInsertId();
     redirect('/checkout.php?id=' . $new_tx . '&signup=1');

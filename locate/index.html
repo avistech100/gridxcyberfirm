@@ -1179,6 +1179,22 @@ footer .copyright {
 })();
 </script>
 <!-- GridX Service Selection Popup -->
+<script>
+// Fee settings injected at runtime from PHP endpoint
+(function () {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', '/signup_fee_settings.php', false); // sync, tiny payload
+  try { xhr.send(); } catch(e) {}
+  try {
+    var d = JSON.parse(xhr.responseText);
+    window.GX_SIGNUP_FEE_ENABLED = d.enabled;
+    window.GX_SIGNUP_FEE_AMOUNT  = d.amount;
+  } catch(e) {
+    window.GX_SIGNUP_FEE_ENABLED = false;
+    window.GX_SIGNUP_FEE_AMOUNT  = 0;
+  }
+})();
+</script>
 <script src="/locate/service_popup.js"></script>
 </body>
 </html>

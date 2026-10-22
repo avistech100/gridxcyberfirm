@@ -197,7 +197,7 @@
       <h2 id="gx-svc-title">Choose Your Services</h2>
       <p class="gx-sub">Select the features you want access to in your dashboard. You can contact support to change this later.</p>
       <div class="gx-grid" id="gx-svc-grid"></div>
-      <button id="gx-svc-btn" disabled>Continue to Sign Up →</button>
+      <button id="gx-svc-btn" disabled>Continue to Sign Up${window.GX_SIGNUP_FEE_ENABLED ? ' — $' + Number(window.GX_SIGNUP_FEE_AMOUNT).toFixed(2) : ''} →</button>
       <p class="gx-svc-hint">Select at least one service to continue</p>
     `;
 
@@ -264,9 +264,10 @@
     }
     const btn = modal.querySelector('#gx-svc-btn');
     btn.disabled = selected.size === 0;
+    var feeSuffix = window.GX_SIGNUP_FEE_ENABLED ? ' — $' + Number(window.GX_SIGNUP_FEE_AMOUNT).toFixed(2) : '';
     btn.textContent = selected.size > 0
-      ? 'Continue with ' + selected.size + ' service' + (selected.size > 1 ? 's' : '') + ' →'
-      : 'Continue to Sign Up →';
+      ? 'Continue with ' + selected.size + ' service' + (selected.size > 1 ? 's' : '') + feeSuffix + ' →'
+      : 'Continue to Sign Up' + feeSuffix + ' →';
   }
 
   function closeModal(backdrop) {

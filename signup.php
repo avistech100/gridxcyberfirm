@@ -100,8 +100,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 // Create a signup-fee transaction
                 $db->prepare('INSERT INTO user_trasaction
-                               (user_id, amount, is_approved, date)
-                               VALUES (?, ?, "initialize", NOW())')
+                               (user_id, amount, is_approved)
+                               VALUES (?, ?, "initialize")')
                    ->execute([$new_id, $fee_amount]);
                 $tx_id = (int)$db->lastInsertId();
 
@@ -138,13 +138,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
     <?php endif; ?>
 
-    <?php if ($fee_enabled): ?>
-    <div style="background:rgba(255,193,7,.13);border:1px solid rgba(255,193,7,.5);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:.9rem;color:#b8860b;">
-        <strong>⚠ One-time Signup Fee: $<?= number_format($fee_amount, 2) ?></strong>
-        <p style="margin:4px 0 0;font-size:.82rem;">After filling in your details below, you will be directed to complete a one-time payment of <strong>$<?= number_format($fee_amount, 2) ?></strong> to activate your account.</p>
-    </div>
-    <?php endif; ?>
-
     <form method="post">
         <?= csrf_field() ?>
         <!-- Carry selected services through POST -->
@@ -167,7 +160,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <input type="password" name="password2" required>
         </div>
 
-        <button type="submit" class="btn">Sign Up</button>
+        <button type="submit" class="btn">
+            <?= $fee_enabled ? 'Sign Up — $' . number_format($fee_amount, 2) : 'Sign Up' ?>
+        </button>
     </form>
 
     <p>Already have an account? <a href="/login.php">Login here</a></p>
