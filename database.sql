@@ -134,3 +134,16 @@ CREATE TABLE IF NOT EXISTS site_settings (
 
 -- Default: self-registration OFF
 INSERT IGNORE INTO site_settings (setting_key, setting_value) VALUES ('allow_self_registration', '0');
+
+-- ============================================================
+-- USER SERVICES (per-user dashboard feature access)
+-- Empty rows for a user = show all (legacy / admin-created accounts)
+-- Populated on signup via service-picker popup, editable by admin
+-- ============================================================
+CREATE TABLE IF NOT EXISTS user_services (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    user_id    INT NOT NULL,
+    service    VARCHAR(50) NOT NULL,
+    UNIQUE KEY uq_user_service (user_id, service),
+    FOREIGN KEY (user_id) REFERENCES user_gridxuser(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

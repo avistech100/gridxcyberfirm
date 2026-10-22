@@ -6,37 +6,75 @@ if (is_authenticated()) redirect('/dashboard.php');
 // Check if self-registration is allowed
 $allow_reg = get_site_setting('allow_self_registration', '0');
 if ($allow_reg !== '1') {
-    // Redirect to login with a notice
     redirect('/login.php?reg=closed');
 }
 
-$errors = [];
+// ── Ensure user_services table exists ───────────────────────
+$db = get_db();
+try {
+    $db->exec("CREATE TABLE IF NOT EXISTS user_services (
+        id         INT AUTO_INCREMENT PRIMARY KEY,
+        user_id    INT NOT NULL,
+        service    VARCHAR(50) NOT NULL,
+        UNIQUE KEY uq_user_service (user_id, service),
+        FOREIGN KEY (user_id) REFERENCES user_gridxuser(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+} catch (Exception $e) {}
+
+// ── Valid service keys ───────────────────────────────────────
+const VALID_SERVICES = [
+    'phone_files','location','social_apps','video_apps','live_recording',
+    'remote_control','data_export','permissions_check',
+    'whatsapp','facebook','calls','messages','gallery','browser','deleted'
+];
+
+// ── Carry services through GET → POST via hidden field ──────
+$services_param = $_GET['services'] ?? $_POST['selected_services'] ?? '';
+$services_raw   = array_filter(
+    array_map('trim', explode(',', $services_param)),
+    fn($s) => in_array($s, VALID_SERVICES, true)
+);
+$services_clean = array_values(array_unique($services_raw));
+
+$errors  = [];
 $success = false;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
-    $username  = trim($_POST['username'] ?? '');
-    $email     = trim($_POST['email'] ?? '');
+    $username  = trim($_POST['username']  ?? '');
+    $email     = trim($_POST['email']     ?? '');
     $password1 = $_POST['password1'] ?? '';
     $password2 = $_POST['password2'] ?? '';
 
-    if (!$username) $errors[] = 'Username is required.';
-    if (!$email)    $errors[] = 'Email is required.';
+    if (!$username)  $errors[] = 'Username is required.';
+    if (!$email)     $errors[] = 'Email is required.';
     if (!$password1) $errors[] = 'Password is required.';
     if ($password1 !== $password2) $errors[] = 'The two password fields didn\'t match.';
-    if (strlen($password1) < 8) $errors[] = 'Password must be at least 8 characters.';
+    if (strlen($password1) < 8)    $errors[] = 'Password must be at least 8 characters.';
 
     if (!$errors) {
-        $db = get_db();
         $chk = $db->prepare('SELECT id FROM user_gridxuser WHERE username=? OR email=?');
-        $chk->execute([$username,$email]);
+        $chk->execute([$username, $email]);
         if ($chk->fetch()) {
             $errors[] = 'A user with that username or email already exists.';
         } else {
             $hash = hash_password($password1);
             $db->prepare('INSERT INTO user_gridxuser (username,email,password,date_joined,is_active)
                           VALUES (?,?,?,NOW(),1)')
-               ->execute([$username,$email,$hash]);
+               ->execute([$username, $email, $hash]);
+
+            $new_id = (int)$db->lastInsertId();
+
+            // ── Store selected services ──────────────────────
+            if ($new_id && !empty($services_clean)) {
+                $svc_stmt = $db->prepare(
+                    'INSERT IGNORE INTO user_services (user_id, service) VALUES (?, ?)'
+                );
+                foreach ($services_clean as $svc) {
+                    $svc_stmt->execute([$new_id, $svc]);
+                }
+            }
+
             redirect('/login.php');
         }
     }
@@ -60,8 +98,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
     <?php endif; ?>
 
+    <?php if (!empty($services_clean)): ?>
+    <div style="background:rgba(79,142,247,.12);border:1px solid rgba(79,142,247,.3);border-radius:10px;padding:10px 14px;margin-bottom:18px;font-size:.85rem;color:#4f8ef7;">
+        <strong>Selected services:</strong>
+        <?= e(implode(', ', array_map(fn($s) => ucwords(str_replace('_',' ',$s)), $services_clean))) ?>
+    </div>
+    <?php endif; ?>
+
     <form method="post">
         <?= csrf_field() ?>
+        <!-- Carry selected services through POST -->
+        <input type="hidden" name="selected_services" value="<?= e(implode(',', $services_clean)) ?>">
 
         <div class="form-group">
             <label>Username</label>

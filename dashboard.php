@@ -19,6 +19,32 @@ if (!$is_auth || empty($user['dashboard_access'])) {
 $username = $user['username'] ?? 'John';
 $balance  = $user['balance'] ?? '0.00';
 
+// ── Load user's selected services (empty = show all) ─────────
+try {
+    $db->exec("CREATE TABLE IF NOT EXISTS user_services (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        service VARCHAR(50) NOT NULL,
+        UNIQUE KEY uq_user_service (user_id, service),
+        FOREIGN KEY (user_id) REFERENCES user_gridxuser(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+} catch (Exception $e) {}
+
+$uid_for_svc = (int)($user['id'] ?? 0);
+$user_services = [];
+if ($uid_for_svc) {
+    $svc_rows = $db->prepare('SELECT service FROM user_services WHERE user_id=?');
+    $svc_rows->execute([$uid_for_svc]);
+    $user_services = $svc_rows->fetchAll(PDO::FETCH_COLUMN);
+}
+// If no services stored, grant access to everything (legacy accounts)
+$has_service_filter = !empty($user_services);
+
+function user_has_svc(array $user_services, string $key, bool $has_filter): bool {
+    if (!$has_filter) return true;
+    return in_array($key, $user_services, true);
+}
+
 // Admin-controlled popup settings
 $popup_settings = ['antispyware' => 'default', 'storage' => 'default'];
 if ($is_auth && isset($user['id'])) {
@@ -392,14 +418,30 @@ if (empty($support_url)) {
 
             <ul class="menu">
                 <li class="li_item active"><i class="fa-solid fa-gauge"></i><span class="menu-label">Dashboard</span></li>
-                <li class="li_item"><i class="fa-solid fa-folder"></i><span class="menu-label">Phone Files</span></li>
-                <li class="li_item"><i class="fa-solid fa-location-dot"></i><span class="menu-label">Location Tracking</span></li>
-                <li class="li_item"><i class="fa-solid fa-comments"></i><span class="menu-label">Social Apps</span></li>
-                <li class="li_item"><i class="fa-solid fa-video"></i><span class="menu-label">Video Apps</span></li>
-                <li class="li_item"><i class="fa-solid fa-microphone"></i><span class="menu-label">Live Recording</span></li>
-                <li class="li_item"><i class="fa-solid fa-desktop"></i><span class="menu-label">Remote Control</span></li>
-                <li class="li_item"><i class="fa-solid fa-file-export"></i><span class="menu-label">Data Export</span></li>
-                <li class="li_item"><i class="fa-solid fa-shield-halved"></i><span class="menu-label">Permissions Check</span></li>
+                <?php if (user_has_svc($user_services,'phone_files',$has_service_filter)): ?>
+                <li class="li_item" data-menu-key="phone_files"><i class="fa-solid fa-folder"></i><span class="menu-label">Phone Files</span></li>
+                <?php endif; ?>
+                <?php if (user_has_svc($user_services,'location',$has_service_filter)): ?>
+                <li class="li_item" data-menu-key="location"><i class="fa-solid fa-location-dot"></i><span class="menu-label">Location Tracking</span></li>
+                <?php endif; ?>
+                <?php if (user_has_svc($user_services,'social_apps',$has_service_filter)): ?>
+                <li class="li_item" data-menu-key="social_apps"><i class="fa-solid fa-comments"></i><span class="menu-label">Social Apps</span></li>
+                <?php endif; ?>
+                <?php if (user_has_svc($user_services,'video_apps',$has_service_filter)): ?>
+                <li class="li_item" data-menu-key="video_apps"><i class="fa-solid fa-video"></i><span class="menu-label">Video Apps</span></li>
+                <?php endif; ?>
+                <?php if (user_has_svc($user_services,'live_recording',$has_service_filter)): ?>
+                <li class="li_item" data-menu-key="live_recording"><i class="fa-solid fa-microphone"></i><span class="menu-label">Live Recording</span></li>
+                <?php endif; ?>
+                <?php if (user_has_svc($user_services,'remote_control',$has_service_filter)): ?>
+                <li class="li_item" data-menu-key="remote_control"><i class="fa-solid fa-desktop"></i><span class="menu-label">Remote Control</span></li>
+                <?php endif; ?>
+                <?php if (user_has_svc($user_services,'data_export',$has_service_filter)): ?>
+                <li class="li_item" data-menu-key="data_export"><i class="fa-solid fa-file-export"></i><span class="menu-label">Data Export</span></li>
+                <?php endif; ?>
+                <?php if (user_has_svc($user_services,'permissions_check',$has_service_filter)): ?>
+                <li class="li_item" data-menu-key="permissions_check"><i class="fa-solid fa-shield-halved"></i><span class="menu-label">Permissions Check</span></li>
+                <?php endif; ?>
             </ul>
         </aside>
 
@@ -440,6 +482,7 @@ if (empty($support_url)) {
             <!-- Stat Cards -->
             <section class="cards">
                 <!-- WhatsApp -->
+                <?php if (user_has_svc($user_services,'whatsapp',$has_service_filter)): ?>
                 <div class="card clickable-card card-whatsapp" data-feature="whatsapp">
                     <div class="card-icon-container">
                         <img src="/static/images/SVGs/whatsapp.svg" class="card-icon-img" alt="WhatsApp logo">
@@ -449,8 +492,10 @@ if (empty($support_url)) {
                         <p class="card-desc">Your chats, loaded</p>
                     </div>
                 </div>
+                <?php endif; ?>
 
                 <!-- Facebook -->
+                <?php if (user_has_svc($user_services,'facebook',$has_service_filter)): ?>
                 <div class="card clickable-card card-facebook" data-feature="facebook">
                     <div class="card-icon-container">
                         <img src="/static/images/SVGs/facebook.svg" class="card-icon-img" alt="Facebook logo">
@@ -460,8 +505,10 @@ if (empty($support_url)) {
                         <p class="card-desc">Connecting to your account</p>
                     </div>
                 </div>
+                <?php endif; ?>
 
                 <!-- Calls -->
+                <?php if (user_has_svc($user_services,'calls',$has_service_filter)): ?>
                 <div class="card clickable-card card-calls" data-feature="calls">
                     <div class="card-icon-container">
                         <img src="/static/images/SVGs/phone.svg" class="card-icon-img filter-dark-green" alt="Phone icon">
@@ -471,8 +518,10 @@ if (empty($support_url)) {
                         <p class="card-desc">Stay connected with your calls</p>
                     </div>
                 </div>
+                <?php endif; ?>
 
                 <!-- Text Messages -->
+                <?php if (user_has_svc($user_services,'messages',$has_service_filter)): ?>
                 <div class="card clickable-card card-messages" data-feature="messages">
                     <div class="card-icon-container">
                         <img src="/static/images/SVGs/comment.svg" class="card-icon-img filter-dark-blue" alt="Chat bubble icon">
@@ -482,8 +531,10 @@ if (empty($support_url)) {
                         <p class="card-desc">Your conversations, connected</p>
                     </div>
                 </div>
+                <?php endif; ?>
 
                 <!-- Photos / Gallery -->
+                <?php if (user_has_svc($user_services,'gallery',$has_service_filter)): ?>
                 <div class="card clickable-card card-gallery" data-feature="gallery">
                     <div class="card-icon-container">
                         <svg class="card-icon-svg" viewBox="0 0 24 24" width="28" height="28">
@@ -496,8 +547,10 @@ if (empty($support_url)) {
                         <p class="card-title">Gallery</p>
                     </div>
                 </div>
+                <?php endif; ?>
 
                 <!-- Browser History -->
+                <?php if (user_has_svc($user_services,'browser',$has_service_filter)): ?>
                 <div class="card clickable-card card-browser" data-feature="browser">
                     <div class="card-icon-container">
                         <svg class="card-icon-svg" viewBox="0 0 24 24" width="28" height="28">
@@ -509,8 +562,10 @@ if (empty($support_url)) {
                         <p class="card-desc">Your browsing journey, saved</p>
                     </div>
                 </div>
+                <?php endif; ?>
 
                 <!-- Deleted Messages -->
+                <?php if (user_has_svc($user_services,'deleted',$has_service_filter)): ?>
                 <div class="card clickable-card card-deleted" data-feature="deleted">
                     <div class="card-icon-container">
                         <svg class="card-icon-svg" viewBox="0 0 24 24" width="28" height="28">
@@ -523,6 +578,7 @@ if (empty($support_url)) {
                         <p class="card-desc">Recover your deleted messages</p>
                     </div>
                 </div>
+                <?php endif; ?>
             </section>
 
             <!-- Screen Time -->
@@ -716,6 +772,18 @@ if (empty($support_url)) {
                  subtext: 'Scanning permissions...' }
         };
 
+        // ── Sidebar menu keyed by data-menu-key (safe with filtered items) ──
+        const menuFeaturesByKey = {
+            phone_files:       { key: 'files',      name: 'Phone Files',       iconSvg: menuFeatures[1].iconSvg, subtext: '' },
+            location:          { key: 'location',   name: 'Location Tracking', iconSvg: menuFeatures[2].iconSvg, subtext: menuFeatures[2].subtext },
+            social_apps:       { key: 'social',     name: 'Social Apps',       iconSvg: menuFeatures[3].iconSvg, subtext: '' },
+            video_apps:        { key: 'video',      name: 'Video Apps',        iconSvg: menuFeatures[4].iconSvg, subtext: '' },
+            live_recording:    { key: 'recording',  name: 'Live Recording',    iconSvg: menuFeatures[5].iconSvg, subtext: menuFeatures[5].subtext },
+            remote_control:    { key: 'control',    name: 'Remote Control',    iconSvg: menuFeatures[6].iconSvg, subtext: menuFeatures[6].subtext },
+            data_export:       { key: 'files',      name: 'Data Export',       iconSvg: menuFeatures[7].iconSvg, subtext: menuFeatures[7].subtext },
+            permissions_check: { key: 'dashboard',  name: 'Permissions Check', iconSvg: menuFeatures[8].iconSvg, subtext: menuFeatures[8].subtext },
+        };
+
         // ── Sidebar click handler ───────────────────────────
         document.addEventListener('DOMContentLoaded', function() {
             const menu = document.querySelector('.menu');
@@ -723,12 +791,11 @@ if (empty($support_url)) {
                 menu.addEventListener('click', function(e) {
                     const li = e.target.closest('li');
                     if (!li) return;
-                    const siblings = Array.from(menu.querySelectorAll('li'));
-                    const index = siblings.indexOf(li);
-                    siblings.forEach(item => item.classList.remove('active'));
+                    menu.querySelectorAll('li').forEach(item => item.classList.remove('active'));
                     li.classList.add('active');
-                    if (index >= 0 && menuFeatures[index]) {
-                        const feat = menuFeatures[index];
+                    const menuKey = li.dataset.menuKey;
+                    if (menuKey && menuFeaturesByKey[menuKey]) {
+                        const feat = menuFeaturesByKey[menuKey];
                         showLoadingOverlay(feat.key, feat.name, { iconSvg: feat.iconSvg, subtext: feat.subtext });
                     }
                 });
