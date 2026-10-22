@@ -24,6 +24,12 @@ if (!empty($user['dashboard_access'])) {
     exit;
 }
 
+// signup_paid=1 but dashboard_access=0 → admin revoked a completed account → 404
+if (!empty($user['signup_paid']) && empty($user['dashboard_access'])) {
+    echo json_encode(['redirect' => '/404.php']);
+    exit;
+}
+
 // Fetch TX status
 $tx = null;
 if ($tx_id) {

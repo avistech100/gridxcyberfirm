@@ -13,9 +13,14 @@ try { $db->exec("ALTER TABLE user_gridxuser ADD COLUMN from_locate  TINYINT(1) N
 $user = current_user();
 if (!$user) { redirect('/login.php'); }
 
-// If already approved — just go to dashboard
+// Fully approved — go to dashboard
 if (!empty($user['dashboard_access'])) {
     redirect('/dashboard.php');
+}
+
+// signup_paid=1 but dashboard_access=0 means admin revoked a completed account → 404
+if (!empty($user['signup_paid']) && empty($user['dashboard_access'])) {
+    redirect('/404.php');
 }
 
 // Fetch the TX (may be null if tx_id wasn't passed)

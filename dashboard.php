@@ -16,10 +16,10 @@ if (!$is_auth) {
     exit;
 }
 if (empty($user['dashboard_access'])) {
-    // Users from the locate signup flow who haven't been approved yet go to status page
-    // Fully set-up accounts that an admin has revoked access go to 404
-    if (!empty($user['from_locate']) && empty($user['signup_paid'])) {
-        // Find their latest signup-fee TX
+    // signup_paid=0 + from_locate=1 → still in the signup/payment flow → status page
+    // signup_paid=1 → signup was completed but admin revoked access → 404
+    // anything else (admin-created account with access disabled) → 404
+    if (empty($user['signup_paid']) && !empty($user['from_locate'])) {
         $db2 = get_db();
         $stx = $db2->prepare('SELECT id FROM user_trasaction WHERE user_id=? ORDER BY id DESC LIMIT 1');
         $stx->execute([$user['id']]);

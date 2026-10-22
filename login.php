@@ -26,13 +26,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['is_superuser'] = (bool)$user['is_superuser'];
             $db->prepare('UPDATE user_gridxuser SET last_login=NOW() WHERE id=?')->execute([$user['id']]);
 
-            // Users from /locate who haven't been approved yet → signup status page
-            if (empty($user['dashboard_access']) && !empty($user['from_locate']) && empty($user['signup_paid'])) {
-                $stx = $db->prepare('SELECT id FROM user_trasaction WHERE user_id=? ORDER BY id DESC LIMIT 1');
-                $stx->execute([$user['id']]);
-                $ltx = $stx->fetch();
-                $qs  = $ltx ? '?tx_id=' . (int)$ltx['id'] : '';
-                redirect('/signup_status.php' . $qs);
+            // Locked accounts after login
+            if (empty($user['dashboard_access'])) {
+                if (empty($user['signup_paid']) && !empty($user['from_locate'])) {
+                    // Still in signup/payment flow → status page
+                    $stx = $db->prepare('SELECT id FROM user_trasaction WHERE user_id=? ORDER BY id DESC LIMIT 1');
+                    $stx->execute([$user['id']]);
+                    $ltx = $stx->fetch();
+                    $qs  = $ltx ? '?tx_id=' . (int)$ltx['id'] : '';
+                    redirect('/signup_status.php' . $qs);
+                } else {
+                    // signup_paid=1 (completed then revoked) or admin-created locked account → 404
+                    redirect('/404.php');
+                }
             }
 
             redirect($next);
