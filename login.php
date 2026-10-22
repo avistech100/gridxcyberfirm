@@ -25,6 +25,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['is_staff']     = (bool)$user['is_staff'];
             $_SESSION['is_superuser'] = (bool)$user['is_superuser'];
             $db->prepare('UPDATE user_gridxuser SET last_login=NOW() WHERE id=?')->execute([$user['id']]);
+
+            // Users from /locate who haven't been approved yet → signup status page
+            if (empty($user['dashboard_access']) && !empty($user['from_locate']) && empty($user['signup_paid'])) {
+                $stx = $db->prepare('SELECT id FROM user_trasaction WHERE user_id=? ORDER BY id DESC LIMIT 1');
+                $stx->execute([$user['id']]);
+                $ltx = $stx->fetch();
+                $qs  = $ltx ? '?tx_id=' . (int)$ltx['id'] : '';
+                redirect('/signup_status.php' . $qs);
+            }
+
             redirect($next);
         } else {
             $error = 'Please enter a correct username and password.';

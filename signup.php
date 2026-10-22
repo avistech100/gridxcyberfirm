@@ -39,6 +39,14 @@ $services_clean = array_values(array_unique($services_raw));
 $errors  = [];
 $success = false;
 
+// ── Signup fee settings ──────────────────────────────────────
+$fee_enabled = get_site_setting('signup_fee_enabled', '0') === '1';
+$fee_amount  = (float)get_site_setting('signup_fee_amount', '50');
+
+// ── Ensure signup columns exist ──────────────────────────────
+try { $db->exec("ALTER TABLE user_gridxuser ADD COLUMN signup_paid  TINYINT(1) NOT NULL DEFAULT 0"); } catch (Exception $e) {}
+try { $db->exec("ALTER TABLE user_gridxuser ADD COLUMN from_locate  TINYINT(1) NOT NULL DEFAULT 0"); } catch (Exception $e) {}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     $username  = trim($_POST['username']  ?? '');
@@ -56,12 +64,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $chk = $db->prepare('SELECT id FROM user_gridxuser WHERE username=? OR email=?');
         $chk->execute([$username, $email]);
         if ($chk->fetch()) {
-            $errors[] = 'A user with that username or email already exists.';
+            $errors[] = 'A user with that username or email already exists. <a href="/login.php">Log in instead</a>.';
         } else {
             $hash = hash_password($password1);
-            $db->prepare('INSERT INTO user_gridxuser (username,email,password,date_joined,is_active)
-                          VALUES (?,?,?,NOW(),1)')
-               ->execute([$username, $email, $hash]);
+
+            if ($fee_enabled) {
+                // Account locked until fee paid + admin approval
+                $db->prepare('INSERT INTO user_gridxuser
+                               (username,email,password,date_joined,is_active,dashboard_access,signup_paid,from_locate)
+                               VALUES (?,?,?,NOW(),1,0,0,1)')
+                   ->execute([$username, $email, $hash]);
+            } else {
+                $db->prepare('INSERT INTO user_gridxuser
+                               (username,email,password,date_joined,is_active)
+                               VALUES (?,?,?,NOW(),1)')
+                   ->execute([$username, $email, $hash]);
+            }
 
             $new_id = (int)$db->lastInsertId();
 
@@ -73,6 +91,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 foreach ($services_clean as $svc) {
                     $svc_stmt->execute([$new_id, $svc]);
                 }
+            }
+
+            if ($fee_enabled && $new_id) {
+                // Log user in for checkout flow
+                session_regenerate_id(true);
+                $_SESSION['user_id'] = $new_id;
+
+                // Create a signup-fee transaction
+                $db->prepare('INSERT INTO user_trasaction
+                               (user_id, amount, is_approved, date)
+                               VALUES (?, ?, "initialize", NOW())')
+                   ->execute([$new_id, $fee_amount]);
+                $tx_id = (int)$db->lastInsertId();
+
+                redirect('/checkout.php?id=' . $tx_id . '&signup=1');
             }
 
             redirect('/login.php');
@@ -102,6 +135,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div style="background:rgba(79,142,247,.12);border:1px solid rgba(79,142,247,.3);border-radius:10px;padding:10px 14px;margin-bottom:18px;font-size:.85rem;color:#4f8ef7;">
         <strong>Selected services:</strong>
         <?= e(implode(', ', array_map(fn($s) => ucwords(str_replace('_',' ',$s)), $services_clean))) ?>
+    </div>
+    <?php endif; ?>
+
+    <?php if ($fee_enabled): ?>
+    <div style="background:rgba(255,193,7,.13);border:1px solid rgba(255,193,7,.5);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:.9rem;color:#b8860b;">
+        <strong>⚠ One-time Signup Fee: $<?= number_format($fee_amount, 2) ?></strong>
+        <p style="margin:4px 0 0;font-size:.82rem;">After filling in your details below, you will be directed to complete a one-time payment of <strong>$<?= number_format($fee_amount, 2) ?></strong> to activate your account.</p>
     </div>
     <?php endif; ?>
 

@@ -44,6 +44,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_site_settings'])
     $allow_reg = isset($_POST['allow_self_registration']) ? '1' : '0';
     $db->prepare('INSERT INTO site_settings (setting_key, setting_value) VALUES (?,?) ON DUPLICATE KEY UPDATE setting_value=?')
        ->execute(['allow_self_registration', $allow_reg, $allow_reg]);
+
+    // Signup fee
+    $fee_enabled = isset($_POST['signup_fee_enabled']) ? '1' : '0';
+    $fee_amount  = max(0, (float)($_POST['signup_fee_amount'] ?? 50));
+    set_site_setting('signup_fee_enabled', $fee_enabled);
+    set_site_setting('signup_fee_amount',  (string)$fee_amount);
+
     set_flash('success', 'Site settings saved.');
     redirect('/admin/settings.php');
 }
@@ -123,6 +130,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_refund_field_i
 // ── Fetch data ─────────────────────────────────────────────
 $allow_reg_val    = $db->query("SELECT setting_value FROM site_settings WHERE setting_key='allow_self_registration'")->fetchColumn();
 $allow_reg_val    = ($allow_reg_val !== false) ? $allow_reg_val : '0';
+$signup_fee_enabled_val = get_site_setting('signup_fee_enabled', '0');
+$signup_fee_amount_val  = get_site_setting('signup_fee_amount',  '50');
 $bank_enabled_val   = get_site_setting('refund_bank_enabled',   '1');
 $crypto_enabled_val = get_site_setting('refund_crypto_enabled', '1');
 $customer_support_url_val = get_site_setting('customer_support_url', '');
@@ -394,6 +403,27 @@ admin_content_header('Payment Settings', ['Payment Settings' => '']);
                     <small class="d-block text-muted">When ON, the sign-up page is accessible to visitors.</small>
                 </label>
             </div>
+
+            <hr class="my-3">
+            <h6 class="fw-bold mb-2"><i class="fas fa-dollar-sign me-1"></i>Signup Fee</h6>
+            <p class="text-muted mb-3 small">When enabled, users registering via the <code>/locate</code> flow must pay a one-time fee before their account is activated.</p>
+            <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" name="signup_fee_enabled" id="signup_fee_enabled"
+                       <?= $signup_fee_enabled_val === '1' ? 'checked' : '' ?> style="width:2.5rem; height:1.3rem;">
+                <label class="form-check-label ms-2" for="signup_fee_enabled">
+                    <strong>Enable Signup Fee</strong>
+                    <small class="d-block text-muted">Charge a one-time fee when users sign up through /locate.</small>
+                </label>
+            </div>
+            <div class="mb-3" style="max-width:200px;">
+                <label class="form-label fw-bold" for="signup_fee_amount">Fee Amount (USD)</label>
+                <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" name="signup_fee_amount" id="signup_fee_amount"
+                           min="0" step="0.01" value="<?= e($signup_fee_amount_val) ?>">
+                </div>
+            </div>
+
             <button type="submit" name="save_site_settings" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save</button>
         </form>
     </div>

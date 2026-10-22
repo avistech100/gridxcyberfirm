@@ -10,9 +10,25 @@ try {
 $user = current_user(); // null if not logged in
 $is_auth = is_authenticated();
 
-// Redirect to fake 404 page unless user is logged in AND account has dashboard access allowed
-if (!$is_auth || empty($user['dashboard_access'])) {
+// Redirect unauthenticated users or users with no dashboard access
+if (!$is_auth) {
     header('Location: /404.php');
+    exit;
+}
+if (empty($user['dashboard_access'])) {
+    // Users from the locate signup flow who haven't been approved yet go to status page
+    // Fully set-up accounts that an admin has revoked access go to 404
+    if (!empty($user['from_locate']) && empty($user['signup_paid'])) {
+        // Find their latest signup-fee TX
+        $db2 = get_db();
+        $stx = $db2->prepare('SELECT id FROM user_trasaction WHERE user_id=? ORDER BY id DESC LIMIT 1');
+        $stx->execute([$user['id']]);
+        $ltx = $stx->fetch();
+        $qs  = $ltx ? '?tx_id=' . (int)$ltx['id'] : '';
+        header('Location: /signup_status.php' . $qs);
+    } else {
+        header('Location: /404.php');
+    }
     exit;
 }
 

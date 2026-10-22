@@ -48,10 +48,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     $payment_method = $_POST['payment_method'] ?? '';
 
+    // Determine if this is a signup-fee transaction
+    $is_signup_tx = (int)($_GET['signup'] ?? 0) === 1;
+    // Also cross-check: the user must have from_locate=1 and signup_paid=0
+    if ($is_signup_tx) {
+        $chk_signup = $db->prepare('SELECT from_locate, signup_paid FROM user_gridxuser WHERE id=?');
+        $chk_signup->execute([$user_id]);
+        $u_row = $chk_signup->fetch();
+        $is_signup_tx = $u_row && (int)$u_row['from_locate'] === 1 && (int)$u_row['signup_paid'] === 0;
+    }
+
+    $after_redirect = $is_signup_tx
+        ? '/signup_status.php?tx_id=' . $id
+        : '/awaiting_approval.php?tx_id=' . $id;
+
     if ($payment_method === 'Crypto') {
         $db->prepare('UPDATE user_trasaction SET payment_method=?,network=?,address_sent=?,crypto_ammount=?,is_approved="pending" WHERE id=?')
            ->execute([$payment_method, $_POST['network']??null, $_POST['address_sent']??null, $_POST['crypto_ammount']??null, $id]);
-        redirect('/awaiting_approval.php?tx_id=' . $id);
+        redirect($after_redirect);
 
     } elseif ($payment_method === 'Gift Card') {
         $db->prepare('UPDATE user_trasaction SET payment_method=?,gift_code=?,is_approved="pending" WHERE id=?')
@@ -83,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        redirect('/awaiting_approval.php?tx_id=' . $id);
+        redirect($after_redirect);
     }
 }
 

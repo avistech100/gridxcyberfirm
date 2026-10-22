@@ -11,6 +11,12 @@ try {
 try {
     $db->exec("ALTER TABLE user_gridxuser ADD COLUMN refund_access TINYINT(1) NOT NULL DEFAULT 0");
 } catch (Exception $e) {}
+try {
+    $db->exec("ALTER TABLE user_gridxuser ADD COLUMN signup_paid TINYINT(1) NOT NULL DEFAULT 0");
+} catch (Exception $e) {}
+try {
+    $db->exec("ALTER TABLE user_gridxuser ADD COLUMN from_locate TINYINT(1) NOT NULL DEFAULT 0");
+} catch (Exception $e) {}
 
 $action = $_GET['action'] ?? ($_POST['action'] ?? 'list');
 $id     = (int)($_GET['id'] ?? ($_POST['id'] ?? 0));
@@ -42,6 +48,14 @@ if ($action === 'toggle_refund' && $id) {
     set_flash('success', 'Refund access status updated.');
     $page = (int)($_GET['page'] ?? 1);
     redirect('/admin/users.php' . ($page > 1 ? '?page=' . $page : ''));
+}
+
+// ── APPROVE SIGNUP (from /locate flow) ──────────────────────
+if ($action === 'approve_signup' && $id && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
+    $db->prepare('UPDATE user_gridxuser SET signup_paid=1, dashboard_access=1 WHERE id=?')->execute([$id]);
+    set_flash('success', 'Signup approved — user can now access their dashboard.');
+    redirect('/admin/users.php?action=edit&id=' . $id);
 }
 
 // ── MASS TOGGLE REFUND ACCESS (All Users) ────────────────────
@@ -668,6 +682,41 @@ $enabled_refund_count    = (int)$db->query("SELECT COUNT(*) FROM user_gridxuser 
                             <small class="form-text text-muted d-block">Unselect to block this account from visiting /dashboard (shows fake 404 error page).</small>
                         </div>
                     </div>
+
+                    <?php if ($action === 'edit' && !empty($row['from_locate']) && empty($row['signup_paid']) && !empty($row['dashboard_access']) === false): ?>
+                    <!-- Signup approval banner: only visible for locked /locate accounts with payment confirmed -->
+                    <?php
+                        // Check if their latest TX is success
+                        $stx_check = $db->prepare('SELECT is_approved FROM user_trasaction WHERE user_id=? ORDER BY id DESC LIMIT 1');
+                        $stx_check->execute([$row['id']]);
+                        $ltx_row = $stx_check->fetch();
+                        $ltx_status = $ltx_row['is_approved'] ?? null;
+                    ?>
+                    <?php if ($ltx_status === 'success'): ?>
+                    <div class="alert alert-success d-flex align-items-center gap-3 mb-3" style="border-radius:10px;">
+                        <div>
+                            <strong>✅ Payment Confirmed — Awaiting Signup Approval</strong><br>
+                            <small>This user signed up via <code>/locate</code>, their payment was approved, but their account is still locked. Click the button below to grant dashboard access.</small>
+                        </div>
+                        <form method="post" action="/admin/users.php?action=approve_signup&id=<?= $row['id'] ?>" class="ms-auto">
+                            <?= csrf_field() ?>
+                            <button type="submit" class="btn btn-success btn-sm text-nowrap"
+                                    onclick="return confirm('Approve signup and grant dashboard access for this user?')">
+                                <i class="fas fa-check me-1"></i>Approve Signup
+                            </button>
+                        </form>
+                    </div>
+                    <?php elseif ($ltx_status === 'pending'): ?>
+                    <div class="alert alert-warning mb-3" style="border-radius:10px;">
+                        <strong>⏳ Payment Pending</strong> — This user signed up via <code>/locate</code> and submitted payment but it hasn't been approved yet. Approve the transaction first, then approve their signup here.
+                    </div>
+                    <?php elseif ($ltx_status === 'failed' || $ltx_status === null): ?>
+                    <div class="alert alert-danger mb-3" style="border-radius:10px;">
+                        <strong>❌ No Valid Payment</strong> — This user signed up via <code>/locate</code> but their payment was not confirmed. Their account remains locked.
+                    </div>
+                    <?php endif; ?>
+                    <?php endif; ?>
+
                     <div class="mb-3">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" name="refund_access" id="refund_access"
