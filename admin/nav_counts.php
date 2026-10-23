@@ -4,26 +4,40 @@
 // Safe to call even if columns don't exist yet (try/catch on ALTER).
 require_once __DIR__ . '/../config.php';
 
+function _col_exists(PDO $db, string $table, string $col): bool {
+    $st = $db->prepare(
+        "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?"
+    );
+    $st->execute([$table, $col]);
+    return (int)$st->fetchColumn() > 0;
+}
+
+function _ensure_col(PDO $db, string $table, string $col, string $def): void {
+    if (!_col_exists($db, $table, $col)) {
+        try { $db->exec("ALTER TABLE `$table` ADD COLUMN `$col` $def"); } catch (Exception $e) {}
+    }
+}
+
 function get_nav_counts(): array {
     $db = get_db();
 
-    // Ensure admin_seen columns exist
-    try { $db->exec("ALTER TABLE user_trasaction ADD COLUMN admin_seen TINYINT(1) NOT NULL DEFAULT 0"); } catch (Exception $e) {}
-    try { $db->exec("ALTER TABLE refund_refund   ADD COLUMN admin_seen TINYINT(1) NOT NULL DEFAULT 0"); } catch (Exception $e) {}
-    try { $db->exec("ALTER TABLE user_gridxuser  ADD COLUMN signup_paid      TINYINT(1) NOT NULL DEFAULT 0"); } catch (Exception $e) {}
-    try { $db->exec("ALTER TABLE user_gridxuser  ADD COLUMN dashboard_access TINYINT(1) NOT NULL DEFAULT 1"); } catch (Exception $e) {}
+    // Ensure columns exist (checks INFORMATION_SCHEMA first, so ALTER only runs once)
+    _ensure_col($db, 'user_trasaction', 'admin_seen',      'TINYINT(1) NOT NULL DEFAULT 0');
+    _ensure_col($db, 'refund_refund',   'admin_seen',      'TINYINT(1) NOT NULL DEFAULT 0');
+    _ensure_col($db, 'user_gridxuser',  'admin_seen',      'TINYINT(1) NOT NULL DEFAULT 0');
+    _ensure_col($db, 'user_gridxuser',  'signup_paid',     'TINYINT(1) NOT NULL DEFAULT 0');
+    _ensure_col($db, 'user_gridxuser',  'dashboard_access','TINYINT(1) NOT NULL DEFAULT 1');
 
-    // Pending transactions not yet seen by admin
+    // Now safe to query — columns are guaranteed to exist
     $tx_count = (int)$db->query(
         "SELECT COUNT(*) FROM user_trasaction WHERE is_approved='pending' AND admin_seen=0"
     )->fetchColumn();
 
-    // Refunds not yet seen by admin
     $refund_count = (int)$db->query(
         "SELECT COUNT(*) FROM refund_refund WHERE admin_seen=0"
     )->fetchColumn();
 
-    // New user signups awaiting approval (fee pending, account locked)
     $user_count = (int)$db->query(
         "SELECT COUNT(*) FROM user_gridxuser WHERE signup_paid=0 AND dashboard_access=0 AND admin_seen=0"
     )->fetchColumn();
