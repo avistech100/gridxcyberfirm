@@ -25,6 +25,11 @@ $db->exec("CREATE TABLE IF NOT EXISTS email_messages (
     sent_at         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
+// Count new leads BEFORE marking seen (used for badge on tab)
+$new_leads_count = (int)$db->query(
+    "SELECT COUNT(*) FROM locate_email_leads WHERE admin_seen=0"
+)->fetchColumn();
+
 // Mark leads as seen when admin visits email page
 $db->exec("UPDATE locate_email_leads SET admin_seen=1 WHERE admin_seen=0");
 
@@ -66,7 +71,19 @@ admin_head('Email');
 ?>
 <style>
 /* ── Email page layout ────────────────────────────────────────────────── */
-.gx-email-wrapper { display:flex; gap:0; height:calc(100vh - 130px); min-height:500px; }
+/* AdminLTE already provides app-content > container-fluid — we just need
+   the wrapper to fill the remaining vertical space without double-nesting */
+.gx-email-wrapper {
+  display: flex;
+  gap: 0;
+  height: calc(100vh - 200px);
+  min-height: 480px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+  margin-bottom: 20px;
+}
 
 /* Left panel */
 .gx-email-left { width:280px; min-width:220px; background:#fff; border-right:1px solid #dee2e6;
@@ -107,7 +124,8 @@ admin_head('Email');
 .gx-thread-time   { font-size:.7rem; color:#aaa; }
 
 /* Main panel */
-.gx-email-main { flex:1; display:flex; flex-direction:column; background:#f4f6f8; }
+.gx-email-main { flex:1; display:flex; flex-direction:column; background:#f4f6f8;
+                 overflow:hidden; min-width:0; }
 .gx-email-main-empty { display:flex; align-items:center; justify-content:center;
                         flex:1; color:#bbb; flex-direction:column; gap:12px; font-size:.95rem; }
 
@@ -189,8 +207,8 @@ admin_head('Email');
 .gx-empty-state i { font-size:2rem; margin-bottom:10px; }
 
 /* Panel hide/show via tab */
-[data-panel] { display:none; }
-[data-panel].active { display:flex; flex-direction:column; flex:1; overflow:hidden; }
+[data-panel] { display:none !important; }
+[data-panel].active { display:flex !important; flex-direction:column; flex:1; overflow:hidden; }
 
 /* Scrollbar thin */
 .gx-lead-list::-webkit-scrollbar, .gx-thread-list::-webkit-scrollbar,
@@ -202,14 +220,11 @@ admin_head('Email');
 <?php admin_body_open('/admin/email.php'); ?>
 <?php admin_content_header('Email', ['Dashboard' => '/admin/', 'Email' => '']); ?>
 
-<div class="app-content">
-  <div class="container-fluid p-0" style="height:100%;">
-
     <!-- SMTP not configured warning -->
     <?php
     $smtp_configured = (bool) get_site_setting('smtp_pass', '');
     if (!$smtp_configured): ?>
-    <div class="alert alert-warning mx-3 mt-2 mb-2 py-2" style="font-size:.84rem;">
+    <div class="alert alert-warning py-2 mb-2" style="font-size:.84rem;">
       <i class="fas fa-exclamation-triangle me-1"></i>
       SMTP not configured — emails won't send.
       <a href="/admin/settings.php#smtp-settings" class="alert-link ms-1">Configure now →</a>
@@ -223,9 +238,8 @@ admin_head('Email');
         <div class="gx-email-tabs">
           <button class="gx-email-tab active" data-tab="leads" onclick="switchTab('leads',this)">
             <i class="fas fa-envelope-open-text me-1"></i> Leads
-            <?php $new_leads = count(array_filter($leads, fn($l) => !$l['admin_seen']));
-                  if ($new_leads > 0): ?>
-            <span class="gx-nav-badge ms-1"><?= $new_leads > 9 ? '9+' : $new_leads ?></span>
+            <?php if ($new_leads_count > 0): ?>
+            <span class="gx-nav-badge ms-1"><?= $new_leads_count > 9 ? '9+' : $new_leads_count ?></span>
             <?php endif; ?>
           </button>
           <button class="gx-email-tab" data-tab="chat" onclick="switchTab('chat',this)">
@@ -348,9 +362,6 @@ admin_head('Email');
 
       </div>
     </div><!-- .gx-email-wrapper -->
-
-  </div>
-</div>
 
 <!-- ── FLOATING COMPOSE BUTTON ──────────────────────────────────────── -->
 <button id="gx-fab-compose" title="Compose new email" onclick="openComposeFor('')">
