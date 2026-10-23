@@ -661,6 +661,150 @@ main {
 @media (max-width: 640px){
   .data-val.mono{font-size:.82rem;overflow-wrap:anywhere;text-align:right}
 }
+
+/* Highlight intrusive signup button at top right */
+.btn-signup-hero {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  background: linear-gradient(135deg, #1d6fe8 0%, #0b2a5b 100%);
+  color: #ffffff !important;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 0.88rem;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(29, 111, 232, 0.35);
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+  white-space: nowrap;
+}
+.btn-signup-hero:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(29, 111, 232, 0.48);
+  color: #ffffff !important;
+}
+
+/* Intrusive persistent signup card under Extended Intelligence */
+.intrusive-signup-card {
+  margin: 0 0 24px 0;
+  background: linear-gradient(135deg, #071732 0%, #0b2a5b 60%, #15468d 100%);
+  border: 1.5px solid #28559a;
+  border-radius: var(--radius-lg);
+  padding: 24px 28px;
+  color: #ffffff;
+  box-shadow: 0 10px 30px -8px rgba(11, 42, 91, 0.45);
+  position: relative;
+  overflow: hidden;
+}
+.intrusive-signup-card::before {
+  content: "";
+  position: absolute;
+  top: -40%;
+  right: -10%;
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.16) 0%, transparent 70%);
+  pointer-events: none;
+}
+.intrusive-signup-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  position: relative;
+  z-index: 1;
+  flex-wrap: wrap;
+}
+.intrusive-signup-content {
+  max-width: 620px;
+}
+.intrusive-signup-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(56, 189, 248, 0.15);
+  color: #7dd3fc;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.intrusive-signup-title {
+  margin: 0 0 6px 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.intrusive-signup-desc {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: #d1e2fc;
+}
+.intrusive-signup-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.btn-intrusive-signup {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  color: #071732 !important;
+  font-weight: 800;
+  font-size: 0.95rem;
+  padding: 12px 22px;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  transition: transform 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+}
+.btn-intrusive-signup:hover {
+  background: #f0f6ff;
+  color: #0b2a5b !important;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32);
+}
+.btn-intrusive-login {
+  color: #d1e2fc !important;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 8px 10px;
+  transition: color 0.15s;
+}
+.btn-intrusive-login:hover {
+  color: #ffffff !important;
+}
+@media (max-width: 768px) {
+  .intrusive-signup-card {
+    padding: 18px 16px;
+  }
+  .intrusive-signup-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .intrusive-signup-actions {
+    width: 100%;
+  }
+  .btn-intrusive-signup {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -741,6 +885,16 @@ main {
             <span id="rep-valid-text">Active &amp; Allocated</span>
           </div>
           <div class="report-actions">
+            <a href="/signup" class="btn-signup-hero" id="hero-top-signup" title="Create account to unlock full intelligence details">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="8.5" cy="7" r="4"/>
+                <line x1="20" y1="8" x2="20" y2="14"/>
+                <line x1="23" y1="11" x2="17" y2="11"/>
+              </svg>
+              <span>Sign Up for Full Details</span>
+            </a>
+
             <button class="btn-secondary" id="btn-copy" type="button" aria-label="Copy phone number">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
@@ -874,6 +1028,31 @@ main {
             <p>Sign up or log in to unlock subscriber identity, address &amp; full carrier history</p>
             <small>Instant access after free registration</small>
             <div class="lt-actions"><a href="/signup" class="btn-signup">Sign up</a><a href="/login" class="btn-login">Login</a></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Intrusive Signup Required Banner -->
+      <section class="intrusive-signup-card" aria-label="Account Registration Required">
+        <div class="intrusive-signup-inner">
+          <div class="intrusive-signup-content">
+            <div class="intrusive-signup-badge">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              Registration Required
+            </div>
+            <h3 class="intrusive-signup-title">
+              Sign up to inspect subscriber identity, address &amp; full carrier history
+            </h3>
+            <p class="intrusive-signup-desc">
+              Full subscriber records, current billing city, live GPS telemetry, and ported network history are restricted to registered users. Create your account in seconds to unlock full investigative access.
+            </p>
+          </div>
+          <div class="intrusive-signup-actions">
+            <a href="/signup" class="btn-intrusive-signup">
+              <span>Sign Up to Unlock</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
+            <a href="/login" class="btn-intrusive-login">Already have an account? Login</a>
           </div>
         </div>
       </section>
@@ -1197,7 +1376,7 @@ main {
     <h3>Where should we send your report?</h3>
     <p class="gx-sub">Enter your email address to receive a copy of this search report from GridX Cyber Solutions.</p>
 
-    <input type="email" id="gx-email-input" placeholder="your@email.com" autocomplete="email" />
+    <input type="email" id="gx-email-input" placeholder="your@email.com" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="gx_no_suggest_email" />
     <div class="gx-popup-err" id="gx-email-err"></div>
 
     <div class="gx-agree-row">
