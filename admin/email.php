@@ -215,6 +215,94 @@ admin_head('Email');
 .gx-chat-body::-webkit-scrollbar { width:4px; }
 .gx-lead-list::-webkit-scrollbar-thumb, .gx-thread-list::-webkit-scrollbar-thumb,
 .gx-chat-body::-webkit-scrollbar-thumb { background:#ccc; border-radius:2px; }
+
+/* ── Mobile responsive ─────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+  .gx-email-wrapper {
+    flex-direction: column;
+    height: auto;
+    min-height: 0;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  /* On mobile, left panel is full-width */
+  .gx-email-left {
+    width: 100%;
+    min-width: 0;
+    border-right: none;
+    border-bottom: 1px solid #dee2e6;
+    /* When a thread is open, hide the left panel (show main instead) */
+  }
+
+  /* When a thread is open on mobile, hide left and show main full-width */
+  .gx-email-wrapper.thread-open .gx-email-left {
+    display: none !important;
+  }
+  .gx-email-wrapper.thread-open .gx-email-main {
+    min-height: calc(100vh - 160px);
+  }
+
+  /* Without a thread open, hide main panel */
+  .gx-email-wrapper:not(.thread-open) .gx-email-main {
+    display: none !important;
+  }
+
+  .gx-email-main {
+    width: 100%;
+    min-height: calc(100vh - 160px);
+  }
+
+  /* Back button shown only on mobile */
+  .gx-mobile-back {
+    display: flex !important;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    cursor: pointer;
+    font-size: .84rem;
+    font-weight: 600;
+    color: #2c3e50;
+    border: none;
+    width: 100%;
+    text-align: left;
+  }
+  .gx-mobile-back:hover { background: #eef2f7; }
+
+  /* Thread list items: bigger tap targets */
+  .gx-thread-item, .gx-lead-item { padding: 13px 14px; }
+
+  /* Chat compose: full width inputs */
+  .gx-chat-compose { padding: 10px 12px; }
+  .gx-chat-compose input[type=text],
+  .gx-chat-compose textarea { font-size: .9rem; }
+
+  /* Chat header */
+  .gx-chat-header { padding: 10px 14px; }
+
+  /* FAB: smaller margin on mobile */
+  #gx-fab-compose { bottom: 16px; right: 16px; width: 46px; height: 46px; font-size: 1.2rem; }
+
+  /* Compose modal: full-screen on mobile */
+  .gx-compose-modal-backdrop { align-items: flex-end; }
+  .gx-compose-modal {
+    max-width: 100%;
+    border-radius: 14px 14px 0 0;
+    max-height: 95vh;
+  }
+
+  /* Messages: wider bubbles on mobile */
+  .gx-msg { max-width: 90%; }
+
+  /* Chat body padding */
+  .gx-chat-body { padding: 12px; }
+}
+
+/* Hide back button on desktop */
+.gx-mobile-back { display: none; }
 </style>
 
 <?php admin_body_open('/admin/email.php'); ?>
@@ -231,7 +319,7 @@ admin_head('Email');
     </div>
     <?php endif; ?>
 
-    <div class="gx-email-wrapper">
+    <div class="gx-email-wrapper<?= $open_thread ? ' thread-open' : '' ?>">
 
       <!-- ── LEFT PANEL ───────────────────────────────────────────────── -->
       <div class="gx-email-left">
@@ -303,6 +391,11 @@ admin_head('Email');
 
       <!-- ── MAIN PANEL ───────────────────────────────────────────────── -->
       <div class="gx-email-main" id="gx-main-pane">
+        <?php if ($open_thread): ?>
+        <button class="gx-mobile-back" onclick="window.location.href='/admin/email.php#chat'">
+          <i class="fas fa-arrow-left"></i> Back to threads
+        </button>
+        <?php endif; ?>
 
         <?php if ($open_thread && !empty($thread_messages)): ?>
         <!-- Chat view for open thread -->
@@ -417,6 +510,10 @@ function switchTab(tab, btn) {
 // ── Open a thread ───────────────────────────────────────────────────────────
 function openThread(email) {
   window.location.href = '/admin/email.php?thread=' + encodeURIComponent(email) + '#chat';
+}
+// ── Mobile back: go back to thread list ─────────────────────────────────────
+function mobileBack() {
+  window.location.href = '/admin/email.php#chat';
 }
 
 // ── Compose modal ───────────────────────────────────────────────────────────

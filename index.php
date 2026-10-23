@@ -831,18 +831,18 @@ $allow_reg = get_site_setting('allow_self_registration', '0');
                         </div>
                     </div>
                     <div class="contact-right">
-                        <form action="#" method="post" data-aos="fade-right" data-aos-delay="500">
+                        <form id="contact-form" action="#" method="post" data-aos="fade-right" data-aos-delay="500">
                             <div>
                                 <span><img loading="lazy" src="/static//images/SVGs/user.svg" alt=""> <label for="name">Name </label></span>
-                                <input type="text" id="name">
+                                <input type="text" id="name" name="name">
                             </div>
                             <div>
                                 <span><img loading="lazy" src="/static//images/SVGs/email.svg" alt="email logo"> <label for="email">Email
                                     </label></span>
-                                <input type="email" id="email">
+                                <input type="email" id="email" name="email">
                             </div>
                             <div>
-                                <span><img loading="lazy" src="/static//images/SVGs/comment.svg" alt="message icon"> <label for="email">Message
+                                <span><img loading="lazy" src="/static//images/SVGs/comment.svg" alt="message icon"> <label for="contact-message">Message
                                     </label></span>
                                 <textarea name="message" rows="4" id="message"
                                     placeholder="Enter Your Message"></textarea>
@@ -851,10 +851,44 @@ $allow_reg = get_site_setting('allow_self_registration', '0');
                                 <input type="checkbox" name="purose" id="subscribe" value="Website Suggestion">
                                 <label for="subscribe">Please subscribe to our monthly newsletters</label>
                             </div>
+                            <div id="contact-form-status" style="font-size:.85rem;margin-bottom:6px;"></div>
                             <div>
-                                <button type="submit">Send Message</button>
+                                <button type="submit" id="contact-send-btn">Send Message</button>
                             </div>
                         </form>
+                        <script>
+                        document.getElementById('contact-form').addEventListener('submit', async function(e) {
+                            e.preventDefault();
+                            var name    = document.getElementById('name').value.trim();
+                            var email   = document.getElementById('email').value.trim();
+                            var message = document.getElementById('message').value.trim();
+                            var status  = document.getElementById('contact-form-status');
+                            var btn     = document.getElementById('contact-send-btn');
+                            if (!email || !message) {
+                                status.innerHTML = '<span style="color:#c0392b;">⚠ Please enter your email and message.</span>';
+                                return;
+                            }
+                            btn.disabled = true;
+                            status.innerHTML = '<span style="color:#888;">Sending…</span>';
+                            var fd = new FormData();
+                            fd.append('name', name);
+                            fd.append('email', email);
+                            fd.append('message', message);
+                            try {
+                                var r = await fetch('/contact_submit.php', { method: 'POST', body: fd });
+                                var d = await r.json();
+                                if (d.ok) {
+                                    status.innerHTML = '<span style="color:#27ae60;">✓ Message sent! We\'ll get back to you shortly.</span>';
+                                    document.getElementById('contact-form').reset();
+                                } else {
+                                    status.innerHTML = '<span style="color:#c0392b;">✗ ' + (d.error || 'Failed to send.') + '</span>';
+                                }
+                            } catch(err) {
+                                status.innerHTML = '<span style="color:#c0392b;">✗ Network error. Please try again.</span>';
+                            }
+                            btn.disabled = false;
+                        });
+                        </script>
                     </div>
                 </div>
             </div>
