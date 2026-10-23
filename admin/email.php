@@ -200,7 +200,7 @@ admin_head('Email');
 </style>
 
 <?php admin_body_open('/admin/email.php'); ?>
-<?php admin_content_header('Email', [['Dashboard', '/admin/'], ['Email', '']]); ?>
+<?php admin_content_header('Email', ['Dashboard' => '/admin/', 'Email' => '']); ?>
 
 <div class="app-content">
   <div class="container-fluid p-0" style="height:100%;">

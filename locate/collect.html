@@ -1092,6 +1092,9 @@ main {
     });
   }
 
+  // Expose for the email-popup script (which runs outside this IIFE)
+  window.showFinalReport = showFinalReport;
+
   // Check if returning with done flag already set
   try {
     if (sessionStorage.getItem('tl_done') === '1') {
