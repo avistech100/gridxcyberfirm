@@ -63,6 +63,8 @@ if (in_array($action,['edit','delete']) && $id) {
     $st->execute([$id]);
     $row = $st->fetch();
     if (!$row) { set_flash('error','Refund not found.'); redirect('/admin/refunds.php'); }
+    // Mark as seen when admin opens it
+    $db->prepare('UPDATE refund_refund SET admin_seen=1 WHERE id=?')->execute([$id]);
 }
 
 // List

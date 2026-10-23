@@ -2,6 +2,8 @@
 // includes/admin_layout.php
 // Replicates the exact Jazzmin AdminLTE layout
 
+require_once __DIR__ . '/../admin/nav_counts.php';
+
 function admin_head(string $page_title = 'Dashboard'): void {
     $full_title = e($page_title) . ' | ' . SITE_TITLE;
     echo <<<HTML
@@ -29,6 +31,18 @@ function admin_head(string $page_title = 'Dashboard'): void {
     <link rel="shortcut icon" href="/static/vendor/adminlte/img/AdminLTELogo.png" type="image/png">
     <link rel="icon" href="/static/vendor/adminlte/img/AdminLTELogo.png" sizes="32x32" type="image/png">
     <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
+    <style>
+        .gx-nav-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 18px; height: 18px; padding: 0 5px;
+            background: #25d366; color: #fff;
+            border-radius: 9px; font-size: 10px; font-weight: 700;
+            line-height: 1; margin-left: auto;
+            flex-shrink: 0;
+        }
+        .nav-link { display: flex !important; align-items: center; gap: 4px; }
+        .nav-link p  { flex: 1; margin-bottom: 0; }
+    </style>
 </head>
 HTML;
 }
@@ -45,6 +59,11 @@ function admin_body_open(string $current_url = ''): void {
     $nav_users        = $nav['users']        ?? '';
     $nav_settings     = $nav['settings']     ?? '';
     $nav_antispyware  = $nav['antispyware']  ?? '';
+
+    $counts         = get_nav_counts();
+    $badge_tx       = nav_badge($counts['transactions']);
+    $badge_refunds  = nav_badge($counts['refunds']);
+    $badge_users    = nav_badge($counts['users']);
 
     echo <<<HTML
 <body class="layout-fixed sidebar-expand-lg bg-body-tertiary dashboard accent-primary theme-default app-loaded sidebar-collapse" data-admin-utc-offset="0">
@@ -138,19 +157,19 @@ HTML;
                     <li class="nav-header">Refund</li>
                     <li class="nav-item">
                         <a href="/admin/refunds.php" class="nav-link {$nav_refunds}">
-                            <i class="nav-icon fas fa-circle"></i> <p>Refunds</p>
+                            <i class="nav-icon fas fa-circle"></i> <p>Refunds</p>{$badge_refunds}
                         </a>
                     </li>
 
                     <li class="nav-header">User</li>
                     <li class="nav-item">
                         <a href="/admin/transactions.php" class="nav-link {$nav_transactions}">
-                            <i class="nav-icon fas fa-circle"></i> <p>Trasactions</p>
+                            <i class="nav-icon fas fa-circle"></i> <p>Trasactions</p>{$badge_tx}
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="/admin/users.php" class="nav-link {$nav_users}">
-                            <i class="nav-icon fas fa-circle"></i> <p>Users</p>
+                            <i class="nav-icon fas fa-circle"></i> <p>Users</p>{$badge_users}
                         </a>
                     </li>
 

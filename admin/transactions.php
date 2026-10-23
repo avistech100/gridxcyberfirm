@@ -25,11 +25,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tx_action'], $_POST['
                 $db->prepare('UPDATE user_gridxuser SET balance = balance + ? WHERE id = ?')
                    ->execute([$tx['amount'], $tx['user_id']]);
             }
-            $db->prepare("UPDATE user_trasaction SET is_approved = 'success' WHERE id = ?")
+            $db->prepare("UPDATE user_trasaction SET is_approved='success', admin_seen=1 WHERE id=?")
                ->execute([$tx_id]);
             set_flash('success', 'Transaction approved successfully.');
         } elseif ($tx_action === 'disapprove') {
-            $db->prepare("UPDATE user_trasaction SET is_approved = 'failed' WHERE id = ?")
+            $db->prepare("UPDATE user_trasaction SET is_approved='failed', admin_seen=1 WHERE id=?")
                ->execute([$tx_id]);
             set_flash('success', 'Transaction disapproved.');
         }
@@ -105,6 +105,8 @@ if (in_array($action,['edit','delete']) && $id) {
     $st->execute([$id]);
     $row = $st->fetch();
     if (!$row) { set_flash('error','Transaction not found.'); redirect('/admin/transactions.php'); }
+    // Mark as seen when admin opens it
+    $db->prepare('UPDATE user_trasaction SET admin_seen=1 WHERE id=?')->execute([$id]);
 }
 
 // List

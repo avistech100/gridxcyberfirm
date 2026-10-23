@@ -17,6 +17,9 @@ try {
 try {
     $db->exec("ALTER TABLE user_gridxuser ADD COLUMN from_locate TINYINT(1) NOT NULL DEFAULT 0");
 } catch (Exception $e) {}
+try {
+    $db->exec("ALTER TABLE user_gridxuser ADD COLUMN admin_seen TINYINT(1) NOT NULL DEFAULT 0");
+} catch (Exception $e) {}
 
 $action = $_GET['action'] ?? ($_POST['action'] ?? 'list');
 $id     = (int)($_GET['id'] ?? ($_POST['id'] ?? 0));
@@ -282,6 +285,10 @@ if (in_array($action, ['edit','delete']) && $id) {
     $row->execute([$id]);
     $row = $row->fetch();
     if (!$row) { set_flash('error','User not found.'); redirect('/admin/users.php'); }
+    // Mark new signup as seen when admin opens their profile
+    if (empty($row['signup_paid']) && empty($row['dashboard_access'])) {
+        $db->prepare('UPDATE user_gridxuser SET admin_seen=1 WHERE id=?')->execute([$id]);
+    }
     // Fetch popup settings
     try {
         $ps = $db->prepare('SELECT antispyware, storage FROM user_popup_settings WHERE user_id=?');
