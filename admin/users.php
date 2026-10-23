@@ -53,11 +53,37 @@ if ($action === 'toggle_refund' && $id) {
     redirect('/admin/users.php' . ($page > 1 ? '?page=' . $page : ''));
 }
 
-// ── APPROVE SIGNUP (from /locate flow) ──────────────────────
+// â”€â”€ APPROVE SIGNUP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 if ($action === 'approve_signup' && $id && $_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
-    $db->prepare('UPDATE user_gridxuser SET signup_paid=1, dashboard_access=1 WHERE id=?')->execute([$id]);
-    set_flash('success', 'Signup approved — user can now access their dashboard.');
+    $db->prepare('UPDATE user_gridxuser SET signup_paid=1, dashboard_access=1, admin_seen=1 WHERE id=?')->execute([$id]);
+
+    // Find latest transaction for this user
+    $tx_stmt = $db->prepare('SELECT * FROM user_trasaction WHERE user_id=? ORDER BY id DESC LIMIT 1');
+    $tx_stmt->execute([$id]);
+    $latest_tx = $tx_stmt->fetch();
+
+    $fee_amount = (float)get_site_setting('signup_fee_amount', '50');
+
+    if ($latest_tx) {
+        if ($latest_tx['is_approved'] !== 'success') {
+            $amount_to_fund = (float)$latest_tx['amount'] > 0 ? (float)$latest_tx['amount'] : $fee_amount;
+            $db->prepare('UPDATE user_gridxuser SET balance = COALESCE(balance, 0) + ? WHERE id = ?')
+               ->execute([$amount_to_fund, $id]);
+            $db->prepare("UPDATE user_trasaction SET is_approved='success', admin_seen=1 WHERE id=?")
+               ->execute([$latest_tx['id']]);
+        }
+    } else {
+        $u_stmt = $db->prepare('SELECT balance FROM user_gridxuser WHERE id=?');
+        $u_stmt->execute([$id]);
+        $u_row = $u_stmt->fetch();
+        if ($u_row && (float)$u_row['balance'] == 0) {
+            $db->prepare('UPDATE user_gridxuser SET balance = COALESCE(balance, 0) + ? WHERE id = ?')
+               ->execute([$fee_amount, $id]);
+        }
+    }
+
+    set_flash('success', 'Signup approved and balance funded â€” user can now access their dashboard.');
     redirect('/admin/users.php?action=edit&id=' . $id);
 }
 

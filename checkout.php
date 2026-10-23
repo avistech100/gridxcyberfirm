@@ -52,10 +52,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $is_signup_tx = (int)($_GET['signup'] ?? 0) === 1;
     // Also cross-check: the user must have from_locate=1 and signup_paid=0
     if ($is_signup_tx) {
-        $chk_signup = $db->prepare('SELECT from_locate, signup_paid FROM user_gridxuser WHERE id=?');
+        $chk_signup = $db->prepare('SELECT signup_paid FROM user_gridxuser WHERE id=?');
         $chk_signup->execute([$user_id]);
         $u_row = $chk_signup->fetch();
-        $is_signup_tx = $u_row && (int)$u_row['from_locate'] === 1 && (int)$u_row['signup_paid'] === 0;
+        $is_signup_tx = $u_row && (int)$u_row['signup_paid'] === 0;
     }
 
     $after_redirect = $is_signup_tx

@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['tx_action'], $_POST['
     if ($tx) {
         if ($tx_action === 'approve') {
             if ($tx['is_approved'] !== 'success') {
-                $db->prepare('UPDATE user_gridxuser SET balance = balance + ? WHERE id = ?')
+                $db->prepare('UPDATE user_gridxuser SET balance = COALESCE(balance, 0) + ? WHERE id = ?')
                    ->execute([$tx['amount'], $tx['user_id']]);
             }
             $db->prepare("UPDATE user_trasaction SET is_approved='success', admin_seen=1 WHERE id=?")
@@ -84,13 +84,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($action, ['add','edit'])) 
     if (!$errors) {
         if ($action === 'add') {
             $db->prepare('INSERT INTO user_trasaction
-                (user_id,amount,crypto_ammount,network,address_sent,gift_type,gift_code,payment_method,is_approved)
-                VALUES (?,?,?,?,?,?,?,?,?)')
+                (user_id,amount,crypto_ammount,network,address_sent,gift_type,gift_code,payment_method,is_approved,admin_seen)
+                VALUES (?,?,?,?,?,?,?,?,?,1)')
                ->execute([$user_id,$amount,$crypto_ammount,$network,$address_sent,$gift_type,$gift_code,$payment_method,$is_approved]);
+            if ($is_approved === 'success') {
+                $db->prepare('UPDATE user_gridxuser SET balance = COALESCE(balance, 0) + ? WHERE id = ?')
+                   ->execute([$amount, $user_id]);
+            }
             set_flash('success', 'Transaction added successfully.');
         } else {
+            $prev = $db->prepare('SELECT is_approved, user_id, amount FROM user_trasaction WHERE id=?');
+            $prev->execute([$id]);
+            $prev_row = $prev->fetch();
+
+            if ($prev_row && $prev_row['is_approved'] !== 'success' && $is_approved === 'success') {
+                $db->prepare('UPDATE user_gridxuser SET balance = COALESCE(balance, 0) + ? WHERE id = ?')
+                   ->execute([$amount, $user_id]);
+            }
             $db->prepare('UPDATE user_trasaction SET user_id=?,amount=?,crypto_ammount=?,network=?,
-                address_sent=?,gift_type=?,gift_code=?,payment_method=?,is_approved=? WHERE id=?')
+                address_sent=?,gift_type=?,gift_code=?,payment_method=?,is_approved=?,admin_seen=1 WHERE id=?')
                ->execute([$user_id,$amount,$crypto_ammount,$network,$address_sent,$gift_type,$gift_code,$payment_method,$is_approved,$id]);
             set_flash('success', 'Transaction updated successfully.');
         }

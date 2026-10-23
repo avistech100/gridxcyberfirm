@@ -19,9 +19,11 @@ $db->exec("CREATE TABLE IF NOT EXISTS antispyware_subscriptions (
     address_sent VARCHAR(255) DEFAULT NULL,
     crypto_amount VARCHAR(60) DEFAULT NULL,
     gift_code VARCHAR(255) DEFAULT NULL,
+    admin_seen TINYINT(1) NOT NULL DEFAULT 0,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES user_gridxuser(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+try { $db->exec("ALTER TABLE antispyware_subscriptions ADD COLUMN admin_seen TINYINT(1) NOT NULL DEFAULT 0"); } catch (Exception $e) {}
 
 // Handle approve/reject
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sub_action'], $_POST['sub_id'])) {
@@ -35,10 +37,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sub_action'], $_POST[
 
     if ($sub) {
         if ($sub_action === 'approve') {
-            $db->prepare("UPDATE antispyware_subscriptions SET is_approved='success' WHERE id=?")->execute([$sub_id]);
+            $db->prepare("UPDATE antispyware_subscriptions SET is_approved='success', admin_seen=1 WHERE id=?")->execute([$sub_id]);
             set_flash('success', 'Subscription approved.');
         } elseif ($sub_action === 'reject') {
-            $db->prepare("UPDATE antispyware_subscriptions SET is_approved='failed' WHERE id=?")->execute([$sub_id]);
+            $db->prepare("UPDATE antispyware_subscriptions SET is_approved='failed', admin_seen=1 WHERE id=?")->execute([$sub_id]);
             set_flash('success', 'Subscription rejected.');
         }
     }

@@ -60,10 +60,11 @@ function admin_body_open(string $current_url = ''): void {
     $nav_settings     = $nav['settings']     ?? '';
     $nav_antispyware  = $nav['antispyware']  ?? '';
 
-    $counts         = get_nav_counts();
-    $badge_tx       = nav_badge($counts['transactions']);
-    $badge_refunds  = nav_badge($counts['refunds']);
-    $badge_users    = nav_badge($counts['users']);
+    $counts            = get_nav_counts();
+    $badge_tx          = nav_badge($counts['transactions']);
+    $badge_refunds     = nav_badge($counts['refunds']);
+    $badge_users       = nav_badge($counts['users']);
+    $badge_antispyware = nav_badge($counts['antispyware'] ?? 0);
 
     echo <<<HTML
 <body class="layout-fixed sidebar-expand-lg bg-body-tertiary dashboard accent-primary theme-default app-loaded sidebar-collapse" data-admin-utc-offset="0">
@@ -181,7 +182,7 @@ HTML;
                     </li>
                     <li class="nav-item">
                         <a href="/admin/antispyware.php" class="nav-link {$nav_antispyware}">
-                            <i class="nav-icon fas fa-shield-virus"></i> <p>Antispyware Subs</p>
+                            <i class="nav-icon fas fa-shield-virus"></i> <p>Antispyware Subs</p>{$badge_antispyware}
                         </a>
                     </li>
 
@@ -240,9 +241,10 @@ document.addEventListener('DOMContentLoaded', function() {
 HTML;
 }
 
-// Set which nav item is active
+// Set which nav item is active and mark unseen notifications as seen
 function set_active_nav(string $section): void {
     $_ENV['ACTIVE_NAV'][$section] = 'active';
+    mark_nav_seen($section);
 }
 
 // Convenience wrapper combining head, body_open, and content_header
