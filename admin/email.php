@@ -596,7 +596,24 @@ window.addEventListener('DOMContentLoaded', () => {
     const btn = document.querySelector('.gx-email-tab[data-tab="chat"]');
     if (btn) switchTab('chat', btn);
   }
+
+  // Auto-fetch real incoming emails from IMAP inbox silently on load
+  fetchIncomingMail();
 });
+
+// ── Fetch incoming emails from IMAP ─────────────────────────────────────────
+async function fetchIncomingMail() {
+  try {
+    const r = await fetch('/admin/fetch_mail.php?ping=1', { method: 'GET' });
+    const d = await r.json();
+    if (d.ok && d.fetched > 0) {
+      // New emails arrived — reload page so chat list/badges update
+      window.location.reload();
+    }
+  } catch(e) {
+    // Silent fail — IMAP may not be configured yet
+  }
+}
 </script>
 
 <?php admin_footer(); ?>

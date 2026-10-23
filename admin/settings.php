@@ -74,6 +74,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_smtp_settings'])
     set_site_setting('smtp_from_email', trim($_POST['smtp_from_email'] ?? 'app@gridxcyberfirm.com'));
     set_site_setting('smtp_from_name',  trim($_POST['smtp_from_name']  ?? 'GridX Cyber Solutions'));
     set_site_setting('smtp_admin_forward', trim($_POST['smtp_admin_forward'] ?? ''));
+    set_site_setting('imap_host',          trim($_POST['imap_host']          ?? 'imap.hostinger.com'));
+    set_site_setting('imap_port',          trim($_POST['imap_port']          ?? '993'));
     set_flash('success', 'Email / SMTP settings saved.');
     redirect('/admin/settings.php#smtp-settings');
 }
@@ -158,6 +160,8 @@ $smtp_pass_val       = get_site_setting('smtp_pass',       '');
 $smtp_from_email_val = get_site_setting('smtp_from_email', 'app@gridxcyberfirm.com');
 $smtp_from_name_val  = get_site_setting('smtp_from_name',  'GridX Cyber Solutions');
 $smtp_forward_val    = get_site_setting('smtp_admin_forward', '');
+$imap_host_val       = get_site_setting('imap_host', 'imap.hostinger.com');
+$imap_port_val       = get_site_setting('imap_port', '993');
 $refund_opts      = $db->query('SELECT * FROM refund_method_options ORDER BY id')->fetchAll();
 $refund_fields    = $db->query('SELECT * FROM refund_method_fields ORDER BY method_name, field_order')->fetchAll();
 $gift_card_uploads= [];
@@ -534,6 +538,24 @@ admin_content_header('Payment Settings', ['Payment Settings' => '']);
                     <label class="form-label font-weight-bold">Admin Personal Email <small class="text-muted fw-normal">(optional — used as Reply-To so replies land in your inbox)</small></label>
                     <input type="email" name="smtp_admin_forward" class="form-control"
                            value="<?= e($smtp_forward_val) ?>" placeholder="yourname@gmail.com">
+                </div>
+                <div class="col-12 mt-2">
+                    <hr class="my-2">
+                    <p class="text-muted mb-2" style="font-size:.84rem;">
+                        <i class="fas fa-inbox me-1"></i>
+                        <strong>Incoming mail (IMAP)</strong> — used to pull emails sent to your mailbox from Gmail or any external sender into the <strong>Admin → Email → Chat</strong> section automatically.
+                        Hostinger: use <code>imap.hostinger.com</code>, port <code>993</code>. Same username &amp; password as SMTP above.
+                    </p>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label font-weight-bold">IMAP Host</label>
+                    <input type="text" name="imap_host" class="form-control"
+                           value="<?= e($imap_host_val) ?>" placeholder="imap.hostinger.com">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label font-weight-bold">IMAP Port</label>
+                    <input type="number" name="imap_port" class="form-control"
+                           value="<?= e($imap_port_val) ?>" placeholder="993">
                 </div>
             </div>
             <div class="mt-3">
