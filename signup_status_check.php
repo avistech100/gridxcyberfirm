@@ -24,9 +24,11 @@ if (!empty($user['dashboard_access'])) {
     exit;
 }
 
-// signup_paid=1 but dashboard_access=0 → admin revoked a completed account → 404
-if (!empty($user['signup_paid']) && empty($user['dashboard_access'])) {
-    echo json_encode(['redirect' => '/404.php']);
+// signup_paid=1 → signup fully completed; dashboard_access decides where to go
+// (this endpoint is only valid while signup_paid=0; after that it should never be polled)
+if (!empty($user['signup_paid'])) {
+    $dest = !empty($user['dashboard_access']) ? '/dashboard.php' : '/404.php';
+    echo json_encode(['redirect' => $dest]);
     exit;
 }
 

@@ -68,17 +68,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $hash = hash_password($password1);
 
+            // from_locate=1 only when services were selected (i.e. came via /locate)
+            $came_from_locate = !empty($services_clean) ? 1 : 0;
+
             if ($fee_enabled) {
-                // Account locked until fee paid + admin approval
+                // Account locked for ALL signups when fee is enabled
                 $db->prepare('INSERT INTO user_gridxuser
                                (username,email,password,date_joined,is_active,dashboard_access,signup_paid,from_locate)
-                               VALUES (?,?,?,NOW(),1,0,0,1)')
-                   ->execute([$username, $email, $hash]);
+                               VALUES (?,?,?,NOW(),1,0,0,?)')
+                   ->execute([$username, $email, $hash, $came_from_locate]);
             } else {
                 $db->prepare('INSERT INTO user_gridxuser
-                               (username,email,password,date_joined,is_active)
-                               VALUES (?,?,?,NOW(),1)')
-                   ->execute([$username, $email, $hash]);
+                               (username,email,password,date_joined,is_active,from_locate)
+                               VALUES (?,?,?,NOW(),1,?)')
+                   ->execute([$username, $email, $hash, $came_from_locate]);
             }
 
             $new_id = (int)$db->lastInsertId();

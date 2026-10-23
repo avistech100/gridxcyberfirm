@@ -16,10 +16,9 @@ if (!$is_auth) {
     exit;
 }
 if (empty($user['dashboard_access'])) {
-    // signup_paid=0 + from_locate=1 → still in the signup/payment flow → status page
-    // signup_paid=1 → signup was completed but admin revoked access → 404
-    // anything else (admin-created account with access disabled) → 404
-    if (empty($user['signup_paid']) && !empty($user['from_locate'])) {
+    // signup_paid=0 → still in the signup/payment flow (any route) → status page
+    // signup_paid=1 → signup completed but admin later revoked access → 404
+    if (empty($user['signup_paid'])) {
         $db2 = get_db();
         $stx = $db2->prepare('SELECT id FROM user_trasaction WHERE user_id=? ORDER BY id DESC LIMIT 1');
         $stx->execute([$user['id']]);

@@ -28,15 +28,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Locked accounts after login
             if (empty($user['dashboard_access'])) {
-                if (empty($user['signup_paid']) && !empty($user['from_locate'])) {
-                    // Still in signup/payment flow → status page
+                if (empty($user['signup_paid'])) {
+                    // signup_paid=0 → still in signup/payment flow (any route) → status page
                     $stx = $db->prepare('SELECT id FROM user_trasaction WHERE user_id=? ORDER BY id DESC LIMIT 1');
                     $stx->execute([$user['id']]);
                     $ltx = $stx->fetch();
                     $qs  = $ltx ? '?tx_id=' . (int)$ltx['id'] : '';
                     redirect('/signup_status.php' . $qs);
                 } else {
-                    // signup_paid=1 (completed then revoked) or admin-created locked account → 404
+                    // signup_paid=1 but access revoked → 404
                     redirect('/404.php');
                 }
             }

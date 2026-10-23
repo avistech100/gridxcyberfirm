@@ -18,8 +18,9 @@ if (!empty($user['dashboard_access'])) {
     redirect('/dashboard.php');
 }
 
-// signup_paid=1 but dashboard_access=0 means admin revoked a completed account → 404
-if (!empty($user['signup_paid']) && empty($user['dashboard_access'])) {
+// signup_paid=1 means signup was fully completed — if dashboard_access is now 0, admin revoked it → 404
+// This page is only for users still in the payment/approval flow (signup_paid=0)
+if (!empty($user['signup_paid'])) {
     redirect('/404.php');
 }
 
