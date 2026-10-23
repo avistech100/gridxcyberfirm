@@ -1005,7 +1005,7 @@ main {
 
     // Transition smoothly to dashboard view
     await sleep(400);
-    showFinalReport();
+    showEmailPopup();
   }
 
   async function showFinalReport() {
@@ -1106,5 +1106,256 @@ main {
 </script>
 <!-- GridX Service Selection Popup -->
 <script src="/locate/service_popup.js"></script>
+
+<!-- ── EMAIL CAPTURE POPUP ────────────────────────────────────────── -->
+<style>
+  /* Light card popup — consistent with locate page light mode */
+  #gx-email-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.52);
+    display: none; align-items: center; justify-content: center;
+    z-index: 9000;
+    padding: 16px;
+  }
+  #gx-email-overlay.open { display: flex; }
+
+  #gx-email-card {
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.22);
+    width: 100%; max-width: 420px;
+    padding: 32px 28px 24px;
+    text-align: center;
+    animation: gxPop .28s cubic-bezier(.34,1.3,.64,1) both;
+  }
+  @keyframes gxPop {
+    from { transform: scale(.88); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+  }
+
+  #gx-email-card .gx-popup-icon {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: #eef4ff; margin: 0 auto 16px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #gx-email-card .gx-popup-icon svg { width:26px; height:26px; fill:none;
+    stroke:#2563eb; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+
+  #gx-email-card h3 {
+    font-size: 1.15rem; font-weight: 700; color: #1a1a2e; margin-bottom: 6px;
+  }
+  #gx-email-card p.gx-sub {
+    font-size: .85rem; color: #666; margin-bottom: 20px; line-height: 1.5;
+  }
+
+  #gx-email-input {
+    width: 100%; padding: 11px 14px; border: 1.5px solid #d1d5db;
+    border-radius: 8px; font-size: .92rem; outline: none;
+    transition: border-color .2s; margin-bottom: 12px;
+    color: #1a1a2e; box-sizing: border-box;
+  }
+  #gx-email-input:focus { border-color: #2563eb; }
+
+  .gx-agree-row {
+    display: flex; align-items: flex-start; gap: 10px;
+    text-align: left; margin-bottom: 18px;
+  }
+  .gx-agree-row input[type=checkbox] {
+    width: 16px; height: 16px; margin-top: 2px; flex-shrink: 0;
+    accent-color: #2563eb; cursor: pointer;
+  }
+  .gx-agree-row label {
+    font-size: .78rem; color: #555; line-height: 1.45; cursor: pointer;
+  }
+
+  #gx-proceed-btn {
+    width: 100%; padding: 12px;
+    background: #1a1a2e; color: #fff;
+    border: none; border-radius: 8px;
+    font-size: .92rem; font-weight: 600; cursor: pointer;
+    transition: background .2s, opacity .2s;
+    letter-spacing: .3px;
+  }
+  #gx-proceed-btn:disabled { opacity: .45; cursor: not-allowed; }
+  #gx-proceed-btn:not(:disabled):hover { background: #2c2c4a; }
+
+  .gx-popup-err {
+    font-size: .78rem; color: #dc2626; margin-bottom: 8px; min-height: 18px;
+  }
+</style>
+
+<div id="gx-email-overlay">
+  <div id="gx-email-card">
+    <div class="gx-popup-icon">
+      <!-- envelope icon -->
+      <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2,4 12,13 22,4"/></svg>
+    </div>
+    <h3>Where should we send your report?</h3>
+    <p class="gx-sub">Enter your email address to receive a copy of this search report from GridX Cyber Solutions.</p>
+
+    <input type="email" id="gx-email-input" placeholder="your@email.com" autocomplete="email" />
+    <div class="gx-popup-err" id="gx-email-err"></div>
+
+    <div class="gx-agree-row">
+      <input type="checkbox" id="gx-agree-cb" onchange="gxToggleProceed()">
+      <label for="gx-agree-cb">
+        I agree to receive this report and future communications from GridX Cyber Solutions.
+        By proceeding you confirm you are authorised to search this number.
+      </label>
+    </div>
+
+    <button id="gx-proceed-btn" disabled onclick="gxProceed()">Proceed &rarr;</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  function showEmailPopup() {
+    document.getElementById('gx-email-overlay').classList.add('open');
+    document.getElementById('gx-email-input').focus();
+  }
+  // Expose globally so the analysis flow can call it
+  window.showEmailPopup = showEmailPopup;
+})();
+
+function gxToggleProceed() {
+  const cb  = document.getElementById('gx-agree-cb');
+  const btn = document.getElementById('gx-proceed-btn');
+  btn.disabled = !cb.checked;
+}
+
+async function gxProceed() {
+  const email = document.getElementById('gx-email-input').value.trim();
+  const err   = document.getElementById('gx-email-err');
+  const btn   = document.getElementById('gx-proceed-btn');
+
+  err.textContent = '';
+
+  // Basic email validation
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    err.textContent = 'Please enter a valid email address.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  try {
+    const fd = new FormData();
+    fd.append('email', email);
+    const res = await fetch('/locate/save_lead.php', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!data.ok) {
+      err.textContent = data.error || 'Something went wrong. Please try again.';
+      btn.disabled = false;
+      btn.textContent = 'Proceed →';
+      return;
+    }
+  } catch (e) {
+    // Non-blocking — if network fails, still let user see report
+  }
+
+  // Close popup and reveal the report
+  document.getElementById('gx-email-overlay').classList.remove('open');
+  if (typeof showFinalReport === 'function') showFinalReport();
+}
+
+// Allow Enter key in email field
+document.getElementById('gx-email-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    const cb = document.getElementById('gx-agree-cb');
+    if (cb.checked) gxProceed();
+  }
+});
+</script>
+<!-- ── CUSTOMER SUPPORT FLOATING BUTTON ───────────────────────── -->
+<style>
+  #gx-support-fab {
+    position: fixed; bottom: 28px; left: 24px; z-index: 8500;
+  }
+  #gx-support-fab-btn {
+    width: 50px; height: 50px; border-radius: 50%;
+    background: #1a1a2e; color: #fff; border: none;
+    font-size: 1.25rem; cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0,0,0,.28);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .2s, background .2s;
+  }
+  #gx-support-fab-btn:hover { background: #2c2c4a; transform: scale(1.08); }
+  #gx-support-popover {
+    position: absolute; bottom: 62px; left: 0;
+    background: #fff; border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(0,0,0,.18);
+    padding: 14px 16px; width: 220px;
+    display: none; flex-direction: column; gap: 10px;
+  }
+  #gx-support-popover.open { display: flex; }
+  #gx-support-popover p {
+    font-size: .78rem; color: #888; margin: 0 0 4px;
+    font-weight: 600; text-transform: uppercase; letter-spacing: .05em;
+  }
+  .gx-sup-option {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: 8px; text-decoration: none;
+    font-size: .85rem; font-weight: 600; color: #1a1a2e;
+    background: #f4f6f8; transition: background .15s;
+  }
+  .gx-sup-option:hover { background: #e8ecf1; }
+  .gx-sup-option .gx-sup-icon {
+    width: 30px; height: 30px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .9rem; flex-shrink: 0;
+  }
+  .gx-sup-option.telegram .gx-sup-icon { background: #e8f4fd; color: #0088cc; }
+  .gx-sup-option.mail     .gx-sup-icon { background: #eef4ff; color: #2563eb; }
+</style>
+
+<div id="gx-support-fab">
+  <div id="gx-support-popover">
+    <p>Get Support</p>
+    <a id="gx-sup-telegram" href="#" class="gx-sup-option telegram" target="_blank" rel="noopener">
+      <span class="gx-sup-icon"><i class="fab fa-telegram-plane"></i></span>
+      Chat on Telegram
+    </a>
+    <a id="gx-sup-email" href="mailto:app@gridxcyberfirm.com?subject=Support%20Request%20%E2%80%94%20GridX%20Cyber%20Solutions"
+       class="gx-sup-option mail">
+      <span class="gx-sup-icon"><i class="fas fa-envelope"></i></span>
+      Email Us
+    </a>
+  </div>
+  <button id="gx-support-fab-btn" title="Customer Support" onclick="gxToggleSupportPopover(event)">
+    <i class="fas fa-headset"></i>
+  </button>
+</div>
+
+<script>
+(function(){
+  function gxToggleSupportPopover(e) {
+    e.stopPropagation();
+    document.getElementById('gx-support-popover').classList.toggle('open');
+  }
+  window.gxToggleSupportPopover = gxToggleSupportPopover;
+
+  document.addEventListener('click', function(e){
+    var fab = document.getElementById('gx-support-fab');
+    var pop = document.getElementById('gx-support-popover');
+    if (pop && fab && !fab.contains(e.target)) pop.classList.remove('open');
+  });
+
+  fetch('/locate/support_config.php')
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){
+      if (d && d.telegram_url) {
+        document.getElementById('gx-sup-telegram').href = d.telegram_url;
+      }
+      if (d && d.email) {
+        var link = document.getElementById('gx-sup-email');
+        link.href = 'mailto:' + d.email + '?subject=Support%20Request%20%E2%80%94%20GridX%20Cyber%20Solutions';
+      }
+    })
+    .catch(function(){});
+})();
+</script>
+
 </body>
 </html>

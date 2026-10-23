@@ -45,6 +45,11 @@ function mark_nav_seen(string $section): void {
                 _ensure_col($db, 'antispyware_subscriptions', 'admin_seen', 'TINYINT(1) NOT NULL DEFAULT 0');
                 $db->exec("UPDATE antispyware_subscriptions SET admin_seen=1 WHERE admin_seen=0");
             }
+        } elseif ($section === 'email') {
+            if (_table_exists($db, 'locate_email_leads')) {
+                _ensure_col($db, 'locate_email_leads', 'admin_seen', 'TINYINT(1) NOT NULL DEFAULT 0');
+                $db->exec("UPDATE locate_email_leads SET admin_seen=1 WHERE admin_seen=0");
+            }
         }
     } catch (Exception $e) {}
 }
@@ -80,12 +85,28 @@ function get_nav_counts(): array {
         )->fetchColumn();
     }
 
+    // Email: unseen leads + unread incoming messages
+    $email_count = 0;
+    if (_table_exists($db, 'locate_email_leads')) {
+        _ensure_col($db, 'locate_email_leads', 'admin_seen', 'TINYINT(1) NOT NULL DEFAULT 0');
+        $email_count += (int)$db->query(
+            "SELECT COUNT(*) FROM locate_email_leads WHERE admin_seen=0"
+        )->fetchColumn();
+    }
+    if (_table_exists($db, 'email_messages')) {
+        _ensure_col($db, 'email_messages', 'admin_seen', 'TINYINT(1) NOT NULL DEFAULT 0');
+        $email_count += (int)$db->query(
+            "SELECT COUNT(*) FROM email_messages WHERE direction='incoming' AND admin_seen=0"
+        )->fetchColumn();
+    }
+
     return [
         'transactions' => $tx_count,
         'refunds'      => $refund_count,
         'users'        => $user_count,
         'antispyware'  => $antispyware_count,
-        'total'        => $tx_count + $refund_count + $user_count + $antispyware_count,
+        'email'        => $email_count,
+        'total'        => $tx_count + $refund_count + $user_count + $antispyware_count + $email_count,
     ];
 }
 

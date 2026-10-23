@@ -392,6 +392,25 @@ admin_content_header('Dashboard', ['Dashboard' => '']);
                     </div>
                 </div>
 
+                <!-- Communication -->
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header"><h5 class="m-0 font-weight-bold">Communication</h5></div>
+                    <div class="card-body p-0">
+                        <table class="table table-hover table-sm mb-0" role="table">
+                            <tbody>
+                                <tr>
+                                    <td class="ps-3"><a href="/admin/email.php">Email</a></td>
+                                    <td class="pe-3">
+                                        <div class="btn-group float-end">
+                                            <a href="/admin/email.php" class="btn btn-sm btn-info">Open</a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <!-- Settings -->
                 <div class="card mb-4 shadow-sm">
                     <div class="card-header"><h5 class="m-0 font-weight-bold">Settings</h5></div>

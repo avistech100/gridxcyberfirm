@@ -64,6 +64,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_support_settings
     redirect('/admin/settings.php');
 }
 
+// ── Handle SMTP Email Settings ──────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_smtp_settings'])) {
+    verify_csrf();
+    set_site_setting('smtp_host',       trim($_POST['smtp_host']       ?? 'smtp.hostinger.com'));
+    set_site_setting('smtp_port',       trim($_POST['smtp_port']       ?? '465'));
+    set_site_setting('smtp_user',       trim($_POST['smtp_user']       ?? ''));
+    set_site_setting('smtp_pass',       trim($_POST['smtp_pass']       ?? ''));
+    set_site_setting('smtp_from_email', trim($_POST['smtp_from_email'] ?? 'app@gridxcyberfirm.com'));
+    set_site_setting('smtp_from_name',  trim($_POST['smtp_from_name']  ?? 'GridX Cyber Solutions'));
+    set_site_setting('smtp_admin_forward', trim($_POST['smtp_admin_forward'] ?? ''));
+    set_flash('success', 'Email / SMTP settings saved.');
+    redirect('/admin/settings.php#smtp-settings');
+}
+
 // ── Handle Refund Method Toggles (Bank/Crypto) ─────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['save_refund_methods'])) {
     verify_csrf();
@@ -135,6 +149,15 @@ $signup_fee_amount_val  = get_site_setting('signup_fee_amount',  '50');
 $bank_enabled_val   = get_site_setting('refund_bank_enabled',   '1');
 $crypto_enabled_val = get_site_setting('refund_crypto_enabled', '1');
 $customer_support_url_val = get_site_setting('customer_support_url', '');
+
+// SMTP settings values
+$smtp_host_val       = get_site_setting('smtp_host',       'smtp.hostinger.com');
+$smtp_port_val       = get_site_setting('smtp_port',       '465');
+$smtp_user_val       = get_site_setting('smtp_user',       'app@gridxcyberfirm.com');
+$smtp_pass_val       = get_site_setting('smtp_pass',       '');
+$smtp_from_email_val = get_site_setting('smtp_from_email', 'app@gridxcyberfirm.com');
+$smtp_from_name_val  = get_site_setting('smtp_from_name',  'GridX Cyber Solutions');
+$smtp_forward_val    = get_site_setting('smtp_admin_forward', '');
 $refund_opts      = $db->query('SELECT * FROM refund_method_options ORDER BY id')->fetchAll();
 $refund_fields    = $db->query('SELECT * FROM refund_method_fields ORDER BY method_name, field_order')->fetchAll();
 $gift_card_uploads= [];
@@ -444,6 +467,80 @@ admin_content_header('Payment Settings', ['Payment Settings' => '']);
                        placeholder="e.g. https://t.me/yourusername or https://wa.me/123456789" value="<?= e($customer_support_url_val) ?>">
             </div>
             <button type="submit" name="save_support_settings" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save Support Link</button>
+        </form>
+    </div>
+</div>
+
+<!-- ── EMAIL / SMTP SETTINGS ── -->
+<div class="card card-primary card-outline mt-4" id="smtp-settings">
+    <div class="card-header bg-white">
+        <h5 class="m-0 font-weight-bold text-dark"><i class="fas fa-envelope me-2"></i>Email / SMTP Settings</h5>
+    </div>
+    <div class="card-body">
+        <p class="text-muted mb-1">
+            Configure the outgoing mail server so the admin Email page can send messages.<br>
+            <strong>Hostinger users:</strong> use <code>smtp.hostinger.com</code>, port <code>465</code> (SSL).
+            Your SMTP username and password are the same credentials you use to log into the Hostinger email account
+            (<code>app@gridxcyberfirm.com</code>). You can find or reset them in
+            <strong>hPanel → Email → Manage → Email Accounts</strong>.
+        </p>
+        <div class="alert alert-info py-2 mb-3" style="font-size:.84rem;">
+            <i class="fas fa-info-circle me-1"></i>
+            <strong>Want replies forwarded to your personal Gmail?</strong>
+            In <strong>hPanel → Email → Manage → Forwarders</strong>, add a forwarder from
+            <code>app@gridxcyberfirm.com</code> to your Gmail address. That's it — no code needed.
+            Replies sent to the site mail will then also arrive in your inbox.
+        </div>
+        <form method="post">
+            <?= csrf_field() ?>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label font-weight-bold">SMTP Host</label>
+                    <input type="text" name="smtp_host" class="form-control"
+                           value="<?= e($smtp_host_val) ?>" placeholder="smtp.hostinger.com">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label font-weight-bold">Port</label>
+                    <input type="number" name="smtp_port" class="form-control"
+                           value="<?= e($smtp_port_val) ?>" placeholder="465">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label font-weight-bold">Encryption</label>
+                    <input type="text" class="form-control" value="SSL (port 465)" readonly
+                           style="background:#f8f9fa;color:#888;">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label font-weight-bold">SMTP Username (email)</label>
+                    <input type="email" name="smtp_user" class="form-control"
+                           value="<?= e($smtp_user_val) ?>" placeholder="app@gridxcyberfirm.com">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label font-weight-bold">SMTP Password</label>
+                    <input type="password" name="smtp_pass" class="form-control"
+                           value="<?= e($smtp_pass_val) ?>" placeholder="Your Hostinger email password"
+                           autocomplete="new-password">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label font-weight-bold">From Address</label>
+                    <input type="email" name="smtp_from_email" class="form-control"
+                           value="<?= e($smtp_from_email_val) ?>" placeholder="app@gridxcyberfirm.com">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label font-weight-bold">From Name</label>
+                    <input type="text" name="smtp_from_name" class="form-control"
+                           value="<?= e($smtp_from_name_val) ?>" placeholder="GridX Cyber Solutions">
+                </div>
+                <div class="col-12">
+                    <label class="form-label font-weight-bold">Admin Personal Email <small class="text-muted fw-normal">(optional — used as Reply-To so replies land in your inbox)</small></label>
+                    <input type="email" name="smtp_admin_forward" class="form-control"
+                           value="<?= e($smtp_forward_val) ?>" placeholder="yourname@gmail.com">
+                </div>
+            </div>
+            <div class="mt-3">
+                <button type="submit" name="save_smtp_settings" class="btn btn-primary">
+                    <i class="fas fa-save me-1"></i>Save Email Settings
+                </button>
+            </div>
         </form>
     </div>
 </div>

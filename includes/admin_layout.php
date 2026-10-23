@@ -59,12 +59,14 @@ function admin_body_open(string $current_url = ''): void {
     $nav_users        = $nav['users']        ?? '';
     $nav_settings     = $nav['settings']     ?? '';
     $nav_antispyware  = $nav['antispyware']  ?? '';
+    $nav_email        = $nav['email']        ?? '';
 
     $counts            = get_nav_counts();
     $badge_tx          = nav_badge($counts['transactions']);
     $badge_refunds     = nav_badge($counts['refunds']);
     $badge_users       = nav_badge($counts['users']);
     $badge_antispyware = nav_badge($counts['antispyware'] ?? 0);
+    $badge_email       = nav_badge($counts['email'] ?? 0);
 
     echo <<<HTML
 <body class="layout-fixed sidebar-expand-lg bg-body-tertiary dashboard accent-primary theme-default app-loaded sidebar-collapse" data-admin-utc-offset="0">
@@ -171,6 +173,13 @@ HTML;
                     <li class="nav-item">
                         <a href="/admin/users.php" class="nav-link {$nav_users}">
                             <i class="nav-icon fas fa-circle"></i> <p>Users</p>{$badge_users}
+                        </a>
+                    </li>
+
+                    <li class="nav-header">Communication</li>
+                    <li class="nav-item">
+                        <a href="/admin/email.php" class="nav-link {$nav_email}">
+                            <i class="nav-icon fas fa-envelope"></i> <p>Email</p>{$badge_email}
                         </a>
                     </li>
 

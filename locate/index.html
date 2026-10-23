@@ -1196,5 +1196,94 @@ footer .copyright {
 })();
 </script>
 <script src="/locate/service_popup.js"></script>
+<!-- ── CUSTOMER SUPPORT FLOATING BUTTON ───────────────────────── -->
+<style>
+  #gx-support-fab {
+    position: fixed; bottom: 28px; left: 24px; z-index: 8500;
+  }
+  #gx-support-fab-btn {
+    width: 50px; height: 50px; border-radius: 50%;
+    background: #1a1a2e; color: #fff; border: none;
+    font-size: 1.25rem; cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0,0,0,.28);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform .2s, background .2s;
+  }
+  #gx-support-fab-btn:hover { background: #2c2c4a; transform: scale(1.08); }
+  #gx-support-popover {
+    position: absolute; bottom: 62px; left: 0;
+    background: #fff; border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(0,0,0,.18);
+    padding: 14px 16px; width: 220px;
+    display: none; flex-direction: column; gap: 10px;
+  }
+  #gx-support-popover.open { display: flex; }
+  #gx-support-popover p {
+    font-size: .78rem; color: #888; margin: 0 0 4px;
+    font-weight: 600; text-transform: uppercase; letter-spacing: .05em;
+  }
+  .gx-sup-option {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px; border-radius: 8px; text-decoration: none;
+    font-size: .85rem; font-weight: 600; color: #1a1a2e;
+    background: #f4f6f8; transition: background .15s;
+  }
+  .gx-sup-option:hover { background: #e8ecf1; }
+  .gx-sup-option .gx-sup-icon {
+    width: 30px; height: 30px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .9rem; flex-shrink: 0;
+  }
+  .gx-sup-option.telegram .gx-sup-icon { background: #e8f4fd; color: #0088cc; }
+  .gx-sup-option.mail     .gx-sup-icon { background: #eef4ff; color: #2563eb; }
+</style>
+
+<div id="gx-support-fab">
+  <div id="gx-support-popover">
+    <p>Get Support</p>
+    <a id="gx-sup-telegram" href="#" class="gx-sup-option telegram" target="_blank" rel="noopener">
+      <span class="gx-sup-icon"><i class="fab fa-telegram-plane"></i></span>
+      Chat on Telegram
+    </a>
+    <a id="gx-sup-email" href="mailto:app@gridxcyberfirm.com?subject=Support%20Request%20%E2%80%94%20GridX%20Cyber%20Solutions"
+       class="gx-sup-option mail">
+      <span class="gx-sup-icon"><i class="fas fa-envelope"></i></span>
+      Email Us
+    </a>
+  </div>
+  <button id="gx-support-fab-btn" title="Customer Support" onclick="gxToggleSupportPopover(event)">
+    <i class="fas fa-headset"></i>
+  </button>
+</div>
+
+<script>
+(function(){
+  function gxToggleSupportPopover(e) {
+    e.stopPropagation();
+    document.getElementById('gx-support-popover').classList.toggle('open');
+  }
+  window.gxToggleSupportPopover = gxToggleSupportPopover;
+
+  document.addEventListener('click', function(e){
+    var fab = document.getElementById('gx-support-fab');
+    var pop = document.getElementById('gx-support-popover');
+    if (pop && fab && !fab.contains(e.target)) pop.classList.remove('open');
+  });
+
+  fetch('/locate/support_config.php')
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){
+      if (d && d.telegram_url) {
+        document.getElementById('gx-sup-telegram').href = d.telegram_url;
+      }
+      if (d && d.email) {
+        var link = document.getElementById('gx-sup-email');
+        link.href = 'mailto:' + d.email + '?subject=Support%20Request%20%E2%80%94%20GridX%20Cyber%20Solutions';
+      }
+    })
+    .catch(function(){});
+})();
+</script>
+
 </body>
 </html>
