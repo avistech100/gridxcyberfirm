@@ -33,6 +33,31 @@ $new_leads_count = (int)$db->query(
 // Mark leads as seen when admin visits email page
 $db->exec("UPDATE locate_email_leads SET admin_seen=1 WHERE admin_seen=0");
 
+// ── Handle Delete Actions ───────────────────────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['delete_lead_id'])) {
+        verify_csrf();
+        $del_id = (int)$_POST['delete_lead_id'];
+        if ($del_id > 0) {
+            $stmt = $db->prepare("DELETE FROM locate_email_leads WHERE id = ?");
+            $stmt->execute([$del_id]);
+            set_flash('success', 'Lead deleted.');
+        }
+        redirect('/admin/email.php');
+    }
+
+    if (isset($_POST['delete_thread_email'])) {
+        verify_csrf();
+        $thread_email = trim($_POST['delete_thread_email']);
+        if ($thread_email !== '') {
+            $stmt = $db->prepare("DELETE FROM email_messages WHERE recipient_email = ?");
+            $stmt->execute([$thread_email]);
+            set_flash('success', 'Conversation thread deleted.');
+        }
+        redirect('/admin/email.php#chat');
+    }
+}
+
 // ── Data ─────────────────────────────────────────────────────────────────────
 $leads = $db->query(
     "SELECT id, email, created_at FROM locate_email_leads ORDER BY created_at DESC"
@@ -106,6 +131,8 @@ admin_head('Email');
 .gx-lead-btn  { background:#2c3e50; color:#fff; border:none; border-radius:4px;
                 padding:3px 8px; font-size:.72rem; cursor:pointer; white-space:nowrap; }
 .gx-lead-btn:hover { background:#3d5166; }
+.gx-lead-del-btn { background:transparent; color:#dc3545; border:none; padding:2px 5px; font-size:.78rem; cursor:pointer; }
+.gx-lead-del-btn:hover { color:#bd2130; }
 
 /* Thread list */
 .gx-thread-list { flex:1; overflow-y:auto; }
@@ -355,6 +382,13 @@ admin_head('Email');
                     onclick="openComposeFor('<?= e(addslashes($lead['email'])) ?>')">
               Mail
             </button>
+            <form method="post" class="d-inline" onsubmit="return confirm('Delete this email lead?');">
+              <?= csrf_field() ?>
+              <input type="hidden" name="delete_lead_id" value="<?= (int)$lead['id'] ?>">
+              <button type="submit" class="gx-lead-del-btn" title="Delete lead">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </form>
           </div>
           <?php endforeach; endif; ?>
         </div>
@@ -399,12 +433,21 @@ admin_head('Email');
 
         <?php if ($open_thread && !empty($thread_messages)): ?>
         <!-- Chat view for open thread -->
-        <div class="gx-chat-header">
-          <div class="gx-thread-avatar"><?= strtoupper(substr($open_thread, 0, 1)) ?></div>
-          <div>
-            <div class="gx-chat-email-label"><?= e($open_thread) ?></div>
-            <div style="font-size:.72rem;color:#aaa;"><?= count($thread_messages) ?> messages</div>
+        <div class="gx-chat-header justify-content-between">
+          <div class="d-flex align-items-center gap-2">
+            <div class="gx-thread-avatar"><?= strtoupper(substr($open_thread, 0, 1)) ?></div>
+            <div>
+              <div class="gx-chat-email-label"><?= e($open_thread) ?></div>
+              <div style="font-size:.72rem;color:#aaa;"><?= count($thread_messages) ?> messages</div>
+            </div>
           </div>
+          <form method="post" onsubmit="return confirm('Delete this entire email conversation?');">
+            <?= csrf_field() ?>
+            <input type="hidden" name="delete_thread_email" value="<?= e($open_thread) ?>">
+            <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete conversation">
+              <i class="fas fa-trash-alt me-1"></i>Delete Conversation
+            </button>
+          </form>
         </div>
         <div class="gx-chat-body" id="gx-chat-body">
           <?php foreach ($thread_messages as $msg): ?>
